@@ -30,6 +30,9 @@ if(CONFIG_ZMK_DISPLAY)
         # Our multi-mode screen and mode-change event
         widgets/display_mode_state_changed.c
         widgets/display_modes.c
+
+        # Step 8: live WPM counter widget (mode 1)
+        widgets/wpm.c
     )
 endif()
 

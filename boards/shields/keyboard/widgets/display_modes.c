@@ -9,7 +9,7 @@
  *
  * Mode layout (0-indexed, matching PRD §6.1 one-indexed modes):
  *   0  Status     — layer / BLE / battery / WPM  (nice_view status widget)
- *   1  WPM        — placeholder → Step 8
+ *   1  WPM        — live WPM counter (zmk_widget_wpm)
  *   2  Battery    — placeholder
  *   3  Volume     — placeholder
  *   4  TypingTest — placeholder → Step 9
@@ -33,6 +33,7 @@
 #include "display_mode_state_changed.h"
 #include "display_modes.h"
 #include "widgets/status.h"   /* zmk_widget_status_init / zmk_widget_status_obj */
+#include "widgets/wpm.h"      /* zmk_widget_wpm_init / zmk_widget_wpm_obj        */
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -42,11 +43,12 @@ static lv_obj_t *screens[DISPLAY_MODE_COUNT];
 static uint8_t   active_mode;
 
 static struct zmk_widget_status status_widget; /* mode 0 */
+static struct zmk_widget_wpm    wpm_widget;    /* mode 1 */
 
-/* Placeholder label text for modes 1-6 (mode 0 uses the status widget). */
+/* Placeholder label text for modes that still use a placeholder (NULL = real widget). */
 static const char *const mode_names[DISPLAY_MODE_COUNT] = {
-    NULL,          /* 0: nice_view status widget — no placeholder label needed */
-    "WPM",         /* 1: Step 8 */
+    NULL,          /* 0: nice_view status widget */
+    NULL,          /* 1: WPM widget (Step 8)     */
     "BATTERY",     /* 2 */
     "VOLUME",      /* 3 */
     "TYPING TEST", /* 4: Step 9 */
@@ -87,8 +89,12 @@ lv_obj_t *zmk_display_status_screen(void) {
     zmk_widget_status_init(&status_widget, screens[0]);
     lv_obj_align(zmk_widget_status_obj(&status_widget), LV_ALIGN_TOP_LEFT, 0, 0);
 
-    /* Modes 1-6: simple centered label placeholders, expanded in later steps. */
-    for (int i = 1; i < DISPLAY_MODE_COUNT; i++) {
+    /* Mode 1: live WPM widget (Step 8). */
+    screens[1] = lv_obj_create(NULL);
+    zmk_widget_wpm_init(&wpm_widget, screens[1]);
+
+    /* Modes 2-6: simple centered label placeholders, expanded in later steps. */
+    for (int i = 2; i < DISPLAY_MODE_COUNT; i++) {
         screens[i] = lv_obj_create(NULL);
         lv_obj_t *lbl = lv_label_create(screens[i]);
         lv_obj_center(lbl);
