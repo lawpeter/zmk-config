@@ -60,7 +60,7 @@ static void set_wpm_state(struct wpm_state state) {
 static struct wpm_state wpm_get_state(const zmk_event_t *eh) {
     const struct zmk_wpm_state_changed *ev = as_zmk_wpm_state_changed(eh);
     return (struct wpm_state){
-        .wpm = ev ? ev->wpm : zmk_wpm_get_state(),
+        .wpm = ev ? ev->state : zmk_wpm_get_state(),
     };
 }
 
