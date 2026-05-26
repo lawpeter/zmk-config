@@ -20,7 +20,11 @@
  * Encoder push (logical key 68, RC(5,0)):
  *   default  &disp_cycle — short press=next mode, long press=reset to mode 0
  *   fn       &kp C_PP
- *   fn2      &mkp MCLK  — requires CONFIG_ZMK_POINTING=y                 */
+ *   fn2      &mkp MCLK  — requires CONFIG_ZMK_POINTING=y
+ *
+ * Step 13 polish:
+ *   CapsLock → &caps_word (capitalises next word, auto-deactivates on space/Esc)
+ *   Combos: LSHFT+RSHFT+BSPC → &bootloader | LSHFT+RSHFT+DEL → &sys_reset */
 
 / {
     behaviors {
@@ -53,6 +57,35 @@
         };
     };
 
+    /* PRD §11 step 13 — safety combos (PRD §10.4).
+     *
+     * Key positions (0-based logical order from the matrix transform):
+     *   LSHFT = 41  (Row 3 / COL1)
+     *   RSHFT = 52  (Row 3 / COL12)
+     *   BSPC  = 13  (Row 0 / COL14)
+     *   DEL   = 54  (Row 3 / COL14 / MX55)
+     *
+     * combo_bootloader  — LSHFT + RSHFT + BSPC  → &bootloader (enter UF2 mode)
+     * combo_sys_reset   — LSHFT + RSHFT + DEL   → &sys_reset  (soft reboot)
+     *
+     * Three keys must all be pressed within 50 ms, making accidental
+     * activation essentially impossible during normal typing.              */
+    combos {
+        compatible = "zmk,combos";
+
+        combo_bootloader {
+            key-positions = <41 52 13>;
+            bindings = <&bootloader>;
+            timeout-ms = <50>;
+        };
+
+        combo_sys_reset {
+            key-positions = <41 52 54>;
+            bindings = <&sys_reset>;
+            timeout-ms = <50>;
+        };
+    };
+
     keymap {
         compatible = "zmk,keymap";
 
@@ -64,7 +97,7 @@
 /* ── Row 1: QWERTY ──────────────────────────────────────────────────────────── */
 &kp TAB   &kp Q  &kp W  &kp E  &kp R  &kp T  &kp Y  &kp U  &kp I  &kp O  &kp P  &kp LBKT  &kp RBKT  &kp BSLH
 /* ── Row 2: home row (13 keys; COL14 omitted — display cutout) ──────────────── */
-&kp CAPS  &kp A  &kp S  &kp D  &kp F  &kp G  &kp H  &kp J  &kp K  &kp L  &kp SEMI &kp APOS &kp RET
+&caps_word &kp A  &kp S  &kp D  &kp F  &kp G  &kp H  &kp J  &kp K  &kp L  &kp SEMI &kp APOS &kp RET
 /* ── Row 3: bottom alpha (MX55/COL14 = Del; adjustable) ────────────────────── */
 &kp LSHFT &kp Z  &kp X  &kp C  &kp V  &kp B  &kp N  &kp M  &kp COMMA &kp DOT &kp FSLH &kp RSHFT &kp UP &kp DEL
 /* ── Row 4: modifiers (13 keys; COL7 omitted — physical gap) ───────────────── *
