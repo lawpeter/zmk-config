@@ -3,4 +3,12 @@ if SHIELD_KEYBOARD
 config ZMK_KEYBOARD_NAME
     default "Custom 65"
 
+# PRD §11 step 10: ZMK Studio — require explicit unlock before remapping,
+# auto-lock after 5 minutes of Studio inactivity.
+config ZMK_STUDIO_LOCKING
+    default y
+
+config ZMK_STUDIO_LOCK_IDLE_TIMEOUT_SEC
+    default 300
+
 endif # SHIELD_KEYBOARD

@@ -10,3 +10,5 @@ exposes:
 features:
   - keys
   - display
+  - encoder
+  - studio

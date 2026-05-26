@@ -85,7 +85,7 @@
              *
              * Number row:  1-0 → F1-F10,  - → F11,  = → F12,  Bksp → Del
              * Navigation:  UP → PgUp,  Left → Home,  Down → PgDn,  Right → End
-             * RSHFT → &trans  (TODO Step 10: replace with &studio_unlock)
+             * RSHFT → &studio_unlock (Step 10; hold FN+RShift to unlock Studio)
              * T     → &typing_test_toggle (Step 9)                              */
             sensor-bindings = <&inc_dec_kp C_NEXT C_PREV>;
             bindings = <
@@ -95,8 +95,8 @@
 &trans  &trans  &trans  &trans  &trans  &typing_test_toggle  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 /* Row 2 — home row */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-/* Row 3 — RSHFT placeholder; UP → PgUp */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &kp PG_UP  &trans
+/* Row 3 — RSHFT (index 11) = &studio_unlock; UP → PgUp */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &studio_unlock  &kp PG_UP  &trans
 /* Row 4 — arrows: Left → Home, Down → PgDn, Right → End */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &kp HOME  &kp PG_DN  &kp END
 /* Row 5 — encoder push: play/pause */
@@ -130,5 +130,12 @@
 &mkp MCLK
             >;
         };
+
+        /* PRD §11 step 11: three reserved layers for ZMK Studio expansion.
+         * Studio can activate these at runtime so the user can add up to
+         * 3 extra layers without a firmware rebuild.                        */
+        extra1 { status = "reserved"; };
+        extra2 { status = "reserved"; };
+        extra3 { status = "reserved"; };
     };
 };
