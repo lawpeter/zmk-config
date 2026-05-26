@@ -5,5 +5,8 @@ type: shield
 url: https://github.com/lawpeter/zmk-config
 requires:
   - pro_micro
+exposes:
+  - nice_view_header
 features:
   - keys
+  - display
