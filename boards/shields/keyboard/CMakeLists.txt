@@ -33,8 +33,17 @@ if(CONFIG_ZMK_DISPLAY)
 
         # Step 8: live WPM counter widget (mode 1)
         widgets/wpm.c
+
+        # Step 9: typing-test widget (mode 4) + state-change event
+        widgets/typing_test_state_changed.c
+        widgets/typing_test.c
     )
 endif()
 
 # disp_cycle behavior — guarded internally by DT_HAS_COMPAT_STATUS_OKAY
 zephyr_library_sources(behaviors/behavior_disp_cycle.c)
+
+# typing_test_toggle behavior — guarded internally by DT_HAS_COMPAT_STATUS_OKAY
+# The ZMK_LISTENER/ZMK_SUBSCRIPTION for keycode counting is always compiled in
+# but is a no-op while tt.active == false (i.e. at boot and when no test runs).
+zephyr_library_sources(behaviors/behavior_typing_test.c)

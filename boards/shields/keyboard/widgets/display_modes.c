@@ -12,7 +12,7 @@
  *   1  WPM        — live WPM counter (zmk_widget_wpm)
  *   2  Battery    — placeholder
  *   3  Volume     — placeholder
- *   4  TypingTest — placeholder → Step 9
+ *   4  TypingTest — typing-test widget (zmk_widget_typing_test)
  *   5  Uptime     — placeholder
  *   6  Animation  — placeholder
  *
@@ -33,7 +33,8 @@
 #include "display_mode_state_changed.h"
 #include "display_modes.h"
 #include "widgets/status.h"   /* zmk_widget_status_init / zmk_widget_status_obj */
-#include "widgets/wpm.h"      /* zmk_widget_wpm_init / zmk_widget_wpm_obj        */
+#include "widgets/wpm.h"          /* zmk_widget_wpm_init / zmk_widget_wpm_obj          */
+#include "widgets/typing_test.h"  /* zmk_widget_typing_test_init / _obj (Step 9, mode 4) */
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -43,7 +44,8 @@ static lv_obj_t *screens[DISPLAY_MODE_COUNT];
 static uint8_t   active_mode;
 
 static struct zmk_widget_status status_widget; /* mode 0 */
-static struct zmk_widget_wpm    wpm_widget;    /* mode 1 */
+static struct zmk_widget_wpm          wpm_widget; /* mode 1 */
+static struct zmk_widget_typing_test  tt_widget;  /* mode 4 */
 
 /* Placeholder label text for modes that still use a placeholder (NULL = real widget). */
 static const char *const mode_names[DISPLAY_MODE_COUNT] = {
@@ -51,7 +53,7 @@ static const char *const mode_names[DISPLAY_MODE_COUNT] = {
     NULL,          /* 1: WPM widget (Step 8)     */
     "BATTERY",     /* 2 */
     "VOLUME",      /* 3 */
-    "TYPING TEST", /* 4: Step 9 */
+    NULL,          /* 4: typing-test widget (Step 9) */
     "UPTIME",      /* 5 */
     "ANIMATION",   /* 6 */
 };
@@ -93,8 +95,13 @@ lv_obj_t *zmk_display_status_screen(void) {
     screens[1] = lv_obj_create(NULL);
     zmk_widget_wpm_init(&wpm_widget, screens[1]);
 
-    /* Modes 2-6: simple centered label placeholders, expanded in later steps. */
+    /* Mode 4: typing-test widget (Step 9). */
+    screens[4] = lv_obj_create(NULL);
+    zmk_widget_typing_test_init(&tt_widget, screens[4]);
+
+    /* Modes 2-3, 5-6: simple centered label placeholders. */
     for (int i = 2; i < DISPLAY_MODE_COUNT; i++) {
+        if (i == 4) continue; /* already initialised above */
         screens[i] = lv_obj_create(NULL);
         lv_obj_t *lbl = lv_label_create(screens[i]);
         lv_obj_center(lbl);

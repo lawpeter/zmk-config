@@ -42,6 +42,15 @@
             #binding-cells = <0>;
             tapping-term-ms = <500>;
         };
+
+        /* PRD §11 step 9: typing-test toggle behavior.
+         * First press starts the test; second press stops it and shows results
+         * on the Typing Test display mode (mode 4).
+         * Bound to FN+T (fn_layer, Row 1, column T).                        */
+        typing_test_toggle: typing_test_toggle {
+            compatible = "zmk,behavior-typing-test";
+            #binding-cells = <0>;
+        };
     };
 
     keymap {
@@ -77,13 +86,13 @@
              * Number row:  1-0 → F1-F10,  - → F11,  = → F12,  Bksp → Del
              * Navigation:  UP → PgUp,  Left → Home,  Down → PgDn,  Right → End
              * RSHFT → &trans  (TODO Step 10: replace with &studio_unlock)
-             * T     → &trans  (TODO Step 9:  replace with &typing_test_toggle)  */
+             * T     → &typing_test_toggle (Step 9)                              */
             sensor-bindings = <&inc_dec_kp C_NEXT C_PREV>;
             bindings = <
 /* Row 0 — number row: F1-F12 + Del */
 &trans  &kp F1  &kp F2  &kp F3  &kp F4  &kp F5  &kp F6  &kp F7  &kp F8  &kp F9  &kp F10  &kp F11  &kp F12  &kp DEL
-/* Row 1 — all transparent */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+/* Row 1 — T (index 5) = &typing_test_toggle; all others transparent */
+&trans  &trans  &trans  &trans  &trans  &typing_test_toggle  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 /* Row 2 — home row */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 /* Row 3 — RSHFT placeholder; UP → PgUp */

@@ -1,0 +1,14 @@
+# Copyright (c) 2025 — Custom 65% keyboard project
+# SPDX-License-Identifier: MIT
+#
+# PRD §11 step 9 — Typing-test toggle behavior.
+# First press starts the test; second press stops it and raises
+# zmk_typing_test_state_changed with WPM / CPM / elapsed / key-count results.
+
+description: >
+  Typing-test toggle. First press starts the test; second press stops it
+  and raises the typing_test_state_changed event with results.
+
+compatible: "zmk,behavior-typing-test"
+
+include: zero_param.yaml
