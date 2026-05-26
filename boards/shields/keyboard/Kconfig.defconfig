@@ -1,0 +1,6 @@
+if SHIELD_KEYBOARD
+
+config ZMK_KEYBOARD_NAME
+    default "Custom 65"
+
+endif # SHIELD_KEYBOARD
