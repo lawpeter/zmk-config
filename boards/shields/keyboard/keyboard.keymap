@@ -7,17 +7,8 @@
  *
  * Layer structure:
  *   0  default_layer — base QWERTY (Step 3)
- *   1  fn_layer      — F-keys, BT management, nav, media (this step)
- *   2  fn2_layer     — all transparent placeholder (Step 4); user fills via Studio
- *
- * FN layer conflict resolution (PRD §5.2 lists both F1-F10 and BT_SEL 0-4 on
- * number keys):
- *   • BT_SEL 0-4 wins on 1-5, BT_CLR on 6  (critical for wireless switching)
- *   • F7-F10 stay on 7-0                     (no conflict)
- *   • F1-F6 added as a bonus on Q-Y          (PRD does not prohibit this)
- *   • T on FN is F5 now; Step 9 replaces it with &typing_test_toggle
- *   • RSHFT on FN is &trans now; Step 10 replaces it with &studio_unlock
- *     (requires CONFIG_ZMK_STUDIO=y which is deferred to Step 10)             */
+ *   1  fn_layer      — F1-F12, navigation                 (hold FN1/MX63)
+ *   2  fn2_layer     — BT management, USB/BLE output toggle (hold FN2/MX64)  */
 
 / {
     keymap {
@@ -47,47 +38,46 @@
         fn_layer {
             /* PRD §5.2 — hold FN1 (COL9/MX63) to activate.
              *
-             * Number row:
-             *   1-5 → BT profile select 0-4       (wireless device switching)
-             *   6   → BT clear current profile
-             *   7-0 → F7-F10
-             *   -   → F11,  = → F12,  Backspace → Del
-             *
-             * QWERTY row (bonus — not in PRD, fills F1-F6 gap):
-             *   Q-T → F1-F5  (T will become &typing_test_toggle in Step 9)
-             *   Y   → F6
-             *   \   → OUT_TOG (toggle USB / BLE output)
-             *
-             * Navigation:
-             *   UP → PgUp,  Left → Home,  Down → PgDn,  Right → End
-             *
-             * FN2 key (COL10) → BT_NXT (cycle to next paired device)
-             *
-             * Right Shift → &trans  (TODO Step 10: replace with &studio_unlock) */
+             * Number row:  1-0 → F1-F10,  - → F11,  = → F12,  Bksp → Del
+             * Navigation:  UP → PgUp,  Left → Home,  Down → PgDn,  Right → End
+             * RSHFT → &trans  (TODO Step 10: replace with &studio_unlock)
+             * T     → &trans  (TODO Step 9:  replace with &typing_test_toggle)  */
             bindings = <
-/* Row 0 — number row */
-&trans        &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR  &kp F7  &kp F8  &kp F9  &kp F10  &kp F11  &kp F12  &kp DEL
-/* Row 1 — QWERTY (F1-F5 on Q-T, F6 on Y, OUT_TOG on backslash) */
-&trans  &kp F1  &kp F2  &kp F3  &kp F4  &kp F5  &kp F6  &trans  &trans  &trans  &trans  &trans  &trans  &out OUT_TOG
+/* Row 0 — number row: F1-F12 + Del */
+&trans  &kp F1  &kp F2  &kp F3  &kp F4  &kp F5  &kp F6  &kp F7  &kp F8  &kp F9  &kp F10  &kp F11  &kp F12  &kp DEL
+/* Row 1 — all transparent */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 /* Row 2 — home row */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-/* Row 3 — bottom alpha (RSHFT = studio_unlock placeholder; UP = PgUp) */
+/* Row 3 — RSHFT placeholder; UP → PgUp */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &kp PG_UP  &trans
-/* Row 4 — modifiers (FN2 = BT_NXT; arrows = Home/PgDn/End) */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &bt BT_NXT  &trans  &kp HOME  &kp PG_DN  &kp END
+/* Row 4 — arrows: Left → Home, Down → PgDn, Right → End */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &kp HOME  &kp PG_DN  &kp END
             >;
         };
 
         fn2_layer {
             /* PRD §5.3 — hold FN2 (COL10/MX64) to activate.
-             * All transparent placeholder — user fills via ZMK Studio.
-             * Step 4 encoder bindings (SCRL_UP/SCRL_DN/MCLK) added in Step 5. */
+             *
+             * Number row:
+             *   1-5 → BT profile select 0-4       (wireless device switching)
+             *   6   → BT clear current profile
+             *   7   → BT_NXT  (cycle forward)
+             *   8   → BT_PRV  (cycle backward)
+             * Backslash → OUT_TOG  (toggle USB / BLE output)
+             * All other keys transparent — user fills via ZMK Studio.
+             * Encoder bindings (SCRL_UP/SCRL_DN/MCLK) added in Step 5.          */
             bindings = <
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
+/* Row 0 — BT management */
+&trans  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR  &bt BT_NXT  &bt BT_PRV  &trans  &trans  &trans  &trans  &trans
+/* Row 1 — backslash → OUT_TOG */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &out OUT_TOG
+/* Row 2 — home row */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+/* Row 3 */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+/* Row 4 */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
             >;
         };
     };
