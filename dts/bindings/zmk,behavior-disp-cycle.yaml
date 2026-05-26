@@ -1,0 +1,17 @@
+# Copyright (c) 2026 keyboard project
+# SPDX-License-Identifier: MIT
+
+description: >
+  Display-mode cycle behavior. A short press (< tapping-term-ms) advances to
+  the next display mode; a long press (>= tapping-term-ms) resets to mode 0
+  (the status screen / mode 1 in PRD numbering).
+
+compatible: "zmk,behavior-disp-cycle"
+
+include: zero_param.yaml
+
+properties:
+  tapping-term-ms:
+    type: int
+    default: 500
+    description: Hold threshold in ms; >= this value resets to mode 0 (status).

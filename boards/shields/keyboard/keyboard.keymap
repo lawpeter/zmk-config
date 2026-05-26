@@ -18,7 +18,7 @@
  *   fn2      CW=SCRL_UP  CCW=SCRL_DN  push=MCLK (middle-click)
  *
  * Encoder push (logical key 68, RC(5,0)):
- *   default  &kp C_PP   — placeholder; Step 7 replaces with &disp_cycle
+ *   default  &disp_cycle — short press=next mode, long press=reset to mode 0
  *   fn       &kp C_PP
  *   fn2      &mkp MCLK  — requires CONFIG_ZMK_POINTING=y                 */
 
@@ -31,6 +31,16 @@
             compatible = "zmk,behavior-sensor-rotate-var";
             #sensor-binding-cells = <2>;
             bindings = <&msc>, <&msc>;
+        };
+
+        /* PRD §11 step 7: display-mode cycle behavior.
+         * Short press (<500 ms): advance to the next display mode (0→1→…→6→0).
+         * Long press (≥500 ms):  reset to mode 0 (status screen / PRD mode 1).
+         * Bound to the encoder push button on the default layer only.       */
+        disp_cycle: disp_cycle {
+            compatible = "zmk,behavior-disp-cycle";
+            #binding-cells = <0>;
+            tapping-term-ms = <500>;
         };
     };
 
@@ -56,8 +66,8 @@
  * * MX59: extra Apple CMD key — adjustable                                       *
  * **MX65: extra Right Ctrl    — adjustable                                       */
 &kp LCTRL &kp LGUI &kp LALT &kp LGUI &kp SPACE &kp RALT &kp SPACE &mo 1 &mo 2 &kp RCTRL &kp LEFT &kp DOWN &kp RIGHT
-/* ── Row 5: encoder push (RC(5,0); placeholder → &disp_cycle in Step 7) ──────── */
-&kp C_PP
+/* ── Row 5: encoder push (RC(5,0)) — &disp_cycle (Step 7) ──────────────────── */
+&disp_cycle
             >;
         };
 
