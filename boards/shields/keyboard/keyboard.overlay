@@ -6,7 +6,14 @@
  * on the ROW net, anode on the switch/column side -> current flows col->row).
  * Keeping the row inputs on the nRF lets GPIO sense wake the MCU from deep
  * sleep; the MCP23017 INT line is not wired to the nRF, so the expander must
- * stay on the output (strobe) side. */
+ * stay on the output (strobe) side.
+ *
+ * PRD §11 step 5: EC11E encoder added.
+ * - Rotation sensor: alps,ec11 on P0.17 (A) / P0.08 (B), steps=60
+ * - Push button:     zmk,kscan-gpio-direct on P0.20 (active-low + pull-up)
+ * - The matrix (rows 0-4) and push button (row 5) are merged via
+ *   zmk,kscan-composite; the composite becomes the chosen zmk,kscan.
+ * - Matrix transform gains a 69th key: RC(5,0) = encoder push.           */
 
 /* Override the board's default I2C0 pins (P0.17/P0.20) so the encoder can use
  * those pins later. Hardware routes I2C to P1.07 (SDA) / P1.02 (SCL). No
@@ -46,7 +53,12 @@
         zmk,matrix-transform = &default_transform;
     };
 
-    kscan0: kscan0 {
+    /* ── Key matrix (rows 0-4 of the composite) ──────────────────────────── */
+
+    /* Renamed from kscan0; now a sub-scanner inside the composite.
+     * wakeup-source stays here so the composite can propagate it to this
+     * child and the nRF row GPIOs can still trigger deep-sleep wake. */
+    kscan_matrix: kscan_matrix {
         compatible = "zmk,kscan-gpio-matrix";
         diode-direction = "col2row";
         wakeup-source;
@@ -79,18 +91,71 @@
             ;
     };
 
+    /* ── Encoder push button (row 5 of the composite) ────────────────────── */
+
+    /* EC11E push switch S1 on P0.20; S2 tied to GND → active-low. */
+    kscan_encoder_btn: kscan_encoder_btn {
+        compatible = "zmk,kscan-gpio-direct";
+        input-gpios = <&gpio0 20 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+    };
+
+    /* ── Composite kscan (chosen zmk,kscan) ──────────────────────────────── */
+
+    /* Merges the 5-row matrix and the 1-key encoder push button.
+     * row-offset=5 places the push button at RC(5,0) in the transform.
+     * wakeup-source here enables PM wakeup propagation to capable children. */
+    kscan0: kscan0 {
+        compatible = "zmk,kscan-composite";
+        rows = <6>;
+        columns = <14>;
+        wakeup-source;
+
+        matrix {
+            kscan = <&kscan_matrix>;
+        };
+
+        encoder_btn {
+            kscan = <&kscan_encoder_btn>;
+            row-offset = <5>;
+        };
+    };
+
+    /* ── EC11E rotary encoder ─────────────────────────────────────────────── */
+
+    /* PRD §2.6: A=P0.17 (pad 5), B=P0.08 (pad 2), steps=60 (60 quadrature
+     * transitions per revolution; 30 detents × 2 transitions/detent).
+     * Internal pull-ups required — no external pull-ups on PCB.
+     * triggers-per-rotation=30 in the sensors node → one action per detent. */
+    encoder: encoder {
+        compatible = "alps,ec11";
+        a-gpios = <&gpio0 17 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+        b-gpios = <&gpio0  8 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+        steps = <60>;
+        status = "okay";
+    };
+
+    sensors: sensors {
+        compatible = "zmk,keymap-sensors";
+        sensors = <&encoder>;
+        triggers-per-rotation = <30>;   /* 30 detents/rev → one trigger per click */
+    };
+
+    /* ── Matrix transform (68 switch keys + 1 encoder push = 69 total) ───── */
+
     default_transform: default_transform {
         compatible = "zmk,matrix-transform";
         columns = <14>;
-        rows = <5>;
+        rows = <6>;   /* 5 matrix rows + 1 virtual row for encoder push */
 
-        /* Row 3 omits COL14 and row 5 omits COL7 (physical gaps, PRD §3). */
+        /* Row 3 omits COL14 and row 5 omits COL7 (physical gaps, PRD §3).
+         * Row 6 (index 5) has one key: the encoder push button at RC(5,0). */
         map = <
 RC(0,0) RC(0,1) RC(0,2) RC(0,3) RC(0,4) RC(0,5) RC(0,6) RC(0,7) RC(0,8) RC(0,9) RC(0,10) RC(0,11) RC(0,12) RC(0,13)
 RC(1,0) RC(1,1) RC(1,2) RC(1,3) RC(1,4) RC(1,5) RC(1,6) RC(1,7) RC(1,8) RC(1,9) RC(1,10) RC(1,11) RC(1,12) RC(1,13)
 RC(2,0) RC(2,1) RC(2,2) RC(2,3) RC(2,4) RC(2,5) RC(2,6) RC(2,7) RC(2,8) RC(2,9) RC(2,10) RC(2,11) RC(2,12)
 RC(3,0) RC(3,1) RC(3,2) RC(3,3) RC(3,4) RC(3,5) RC(3,6) RC(3,7) RC(3,8) RC(3,9) RC(3,10) RC(3,11) RC(3,12) RC(3,13)
 RC(4,0) RC(4,1) RC(4,2) RC(4,3) RC(4,4) RC(4,5) RC(4,7) RC(4,8) RC(4,9) RC(4,10) RC(4,11) RC(4,12) RC(4,13)
+RC(5,0)
         >;
     };
 };

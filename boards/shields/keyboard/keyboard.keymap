@@ -2,19 +2,43 @@
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/outputs.h>
+#include <dt-bindings/zmk/pointing.h>
 
 /* PRD §11 step 4: FN + FN2 layers.
+ * PRD §11 step 5: EC11E encoder — rotation + push button (69th key).
  *
  * Layer structure:
  *   0  default_layer — base QWERTY (Step 3)
  *   1  fn_layer      — F1-F12, navigation                 (hold FN1/MX63)
- *   2  fn2_layer     — BT management, USB/BLE output toggle (hold FN2/MX64)  */
+ *   2  fn2_layer     — BT management, USB/BLE output toggle (hold FN2/MX64)
+ *
+ * Encoder (sensor index 0):
+ *   default  CW=Vol+     CCW=Vol-     push=C_PP (→ &disp_cycle in Step 7)
+ *   fn       CW=C_NEXT   CCW=C_PREV   push=C_PP
+ *   fn2      CW=SCRL_UP  CCW=SCRL_DN  push=MCLK (middle-click)
+ *
+ * Encoder push (logical key 68, RC(5,0)):
+ *   default  &kp C_PP   — placeholder; Step 7 replaces with &disp_cycle
+ *   fn       &kp C_PP
+ *   fn2      &mkp MCLK  — requires CONFIG_ZMK_POINTING=y                 */
 
 / {
+    behaviors {
+        /* Sensor-rotate behavior using &msc (mouse scroll) for the FN2 layer.
+         * zmk,behavior-sensor-rotate-var lets us pass SCRL_UP/SCRL_DOWN as
+         * params at keymap time, delegating to behavior-input-two-axis.    */
+        inc_dec_msc: inc_dec_msc {
+            compatible = "zmk,behavior-sensor-rotate-var";
+            #sensor-binding-cells = <2>;
+            bindings = <&msc>, <&msc>;
+        };
+    };
+
     keymap {
         compatible = "zmk,keymap";
 
         default_layer {
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
             bindings = <
 /* ── Row 0: number row ─────────────────────────────────────────────────────── */
 &kp GRAVE &kp N1 &kp N2 &kp N3 &kp N4 &kp N5 &kp N6 &kp N7 &kp N8 &kp N9 &kp N0 &kp MINUS &kp EQUAL &kp BSPC
@@ -29,9 +53,11 @@
  * LCTRL    LGUI   LALT   LGUI(CMD)*  Space1(2u)  RALT    [gap]                  *
  *                  COL8        COL9   COL10  COL11(MX65)  COL12  COL13  COL14   *
  *                  Space2(2u)  FN1    FN2    RCTRL**      Left   Down   Right   *
- * * MX59: extra Apple CMD key — adjustable via Studio or here                   *
- * **MX65: extra Right Ctrl    — adjustable via Studio or here                   */
+ * * MX59: extra Apple CMD key — adjustable                                       *
+ * **MX65: extra Right Ctrl    — adjustable                                       */
 &kp LCTRL &kp LGUI &kp LALT &kp LGUI &kp SPACE &kp RALT &kp SPACE &mo 1 &mo 2 &kp RCTRL &kp LEFT &kp DOWN &kp RIGHT
+/* ── Row 5: encoder push (RC(5,0); placeholder → &disp_cycle in Step 7) ──────── */
+&kp C_PP
             >;
         };
 
@@ -42,6 +68,7 @@
              * Navigation:  UP → PgUp,  Left → Home,  Down → PgDn,  Right → End
              * RSHFT → &trans  (TODO Step 10: replace with &studio_unlock)
              * T     → &trans  (TODO Step 9:  replace with &typing_test_toggle)  */
+            sensor-bindings = <&inc_dec_kp C_NEXT C_PREV>;
             bindings = <
 /* Row 0 — number row: F1-F12 + Del */
 &trans  &kp F1  &kp F2  &kp F3  &kp F4  &kp F5  &kp F6  &kp F7  &kp F8  &kp F9  &kp F10  &kp F11  &kp F12  &kp DEL
@@ -53,6 +80,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &kp PG_UP  &trans
 /* Row 4 — arrows: Left → Home, Down → PgDn, Right → End */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &kp HOME  &kp PG_DN  &kp END
+/* Row 5 — encoder push: play/pause */
+&kp C_PP
             >;
         };
 
@@ -65,8 +94,8 @@
              *   7   → BT_NXT  (cycle forward)
              *   8   → BT_PRV  (cycle backward)
              * Backslash → OUT_TOG  (toggle USB / BLE output)
-             * All other keys transparent — user fills via ZMK Studio.
-             * Encoder bindings (SCRL_UP/SCRL_DN/MCLK) added in Step 5.          */
+             * All other keys transparent — user fills via ZMK Studio.          */
+            sensor-bindings = <&inc_dec_msc SCRL_UP SCRL_DOWN>;
             bindings = <
 /* Row 0 — BT management */
 &trans  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR  &bt BT_NXT  &bt BT_PRV  &trans  &trans  &trans  &trans  &trans
@@ -78,6 +107,8 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 /* Row 4 */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+/* Row 5 — encoder push: middle click */
+&mkp MCLK
             >;
         };
     };
