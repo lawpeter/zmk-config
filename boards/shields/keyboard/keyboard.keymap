@@ -1,21 +1,23 @@
 #include <behaviors.dtsi>
 #include <dt-bindings/zmk/keys.h>
+#include <dt-bindings/zmk/bt.h>
+#include <dt-bindings/zmk/outputs.h>
 
-/* PRD §11 step 3: finalize base QWERTY layer.
+/* PRD §11 step 4: FN + FN2 layers.
  *
- * Row/column numbering (0-indexed matrix rows × 14 cols):
- *   Row 0  — number row    (14 keys, COL1–COL14)
- *   Row 1  — QWERTY        (14 keys, COL1–COL14)
- *   Row 2  — home row      (13 keys, COL1–COL13; COL14 = display cutout, no switch)
- *   Row 3  — bottom alpha  (14 keys, COL1–COL14; MX55/COL14 = Del, adjustable)
- *   Row 4  — modifiers     (13 keys, COL1–COL6 + COL8–COL14; COL7 = physical gap)
+ * Layer structure:
+ *   0  default_layer — base QWERTY (Step 3)
+ *   1  fn_layer      — F-keys, BT management, nav, media (this step)
+ *   2  fn2_layer     — all transparent placeholder (Step 4); user fills via Studio
  *
- * Row 4 extra keys vs. KLE (PRD §4.1):
- *   MX59 / COL4  — Apple CMD (LGUI); adjustable via Studio or here
- *   MX65 / COL11 — Right Ctrl;       adjustable via Studio or here
- *
- * Layers 1 (fn_layer) and 2 (fn2_layer) are transparent placeholders.
- * Step 4 will fill them with FN bindings per PRD §5.2–5.3. */
+ * FN layer conflict resolution (PRD §5.2 lists both F1-F10 and BT_SEL 0-4 on
+ * number keys):
+ *   • BT_SEL 0-4 wins on 1-5, BT_CLR on 6  (critical for wireless switching)
+ *   • F7-F10 stay on 7-0                     (no conflict)
+ *   • F1-F6 added as a bonus on Q-Y          (PRD does not prohibit this)
+ *   • T on FN is F5 now; Step 9 replaces it with &typing_test_toggle
+ *   • RSHFT on FN is &trans now; Step 10 replaces it with &studio_unlock
+ *     (requires CONFIG_ZMK_STUDIO=y which is deferred to Step 10)             */
 
 / {
     keymap {
@@ -32,29 +34,54 @@
 /* ── Row 3: bottom alpha (MX55/COL14 = Del; adjustable) ────────────────────── */
 &kp LSHFT &kp Z  &kp X  &kp C  &kp V  &kp B  &kp N  &kp M  &kp COMMA &kp DOT &kp FSLH &kp RSHFT &kp UP &kp DEL
 /* ── Row 4: modifiers (13 keys; COL7 omitted — physical gap) ───────────────── *
- * COL1     COL2   COL3   COL4        COL5        COL6                           *
+ * COL1     COL2   COL3   COL4(MX59)  COL5        COL6                           *
  * LCTRL    LGUI   LALT   LGUI(CMD)*  Space1(2u)  RALT    [gap]                  *
- *                  COL8        COL9   COL10  COL11**   COL12  COL13  COL14       *
- *                  Space2(2u)  FN1    FN2    RCTRL**   Left   Down   Right       *
- * * MX59: extra Apple CMD key — adjustable                                       *
- * **MX65: extra Right Ctrl    — adjustable                                       */
+ *                  COL8        COL9   COL10  COL11(MX65)  COL12  COL13  COL14   *
+ *                  Space2(2u)  FN1    FN2    RCTRL**      Left   Down   Right   *
+ * * MX59: extra Apple CMD key — adjustable via Studio or here                   *
+ * **MX65: extra Right Ctrl    — adjustable via Studio or here                   */
 &kp LCTRL &kp LGUI &kp LALT &kp LGUI &kp SPACE &kp RALT &kp SPACE &mo 1 &mo 2 &kp RCTRL &kp LEFT &kp DOWN &kp RIGHT
             >;
         };
 
         fn_layer {
-            /* All transparent — Step 4 fills in FN bindings (PRD §5.2). */
+            /* PRD §5.2 — hold FN1 (COL9/MX63) to activate.
+             *
+             * Number row:
+             *   1-5 → BT profile select 0-4       (wireless device switching)
+             *   6   → BT clear current profile
+             *   7-0 → F7-F10
+             *   -   → F11,  = → F12,  Backspace → Del
+             *
+             * QWERTY row (bonus — not in PRD, fills F1-F6 gap):
+             *   Q-T → F1-F5  (T will become &typing_test_toggle in Step 9)
+             *   Y   → F6
+             *   \   → OUT_TOG (toggle USB / BLE output)
+             *
+             * Navigation:
+             *   UP → PgUp,  Left → Home,  Down → PgDn,  Right → End
+             *
+             * FN2 key (COL10) → BT_NXT (cycle to next paired device)
+             *
+             * Right Shift → &trans  (TODO Step 10: replace with &studio_unlock) */
             bindings = <
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-&trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
+/* Row 0 — number row */
+&trans        &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR  &kp F7  &kp F8  &kp F9  &kp F10  &kp F11  &kp F12  &kp DEL
+/* Row 1 — QWERTY (F1-F5 on Q-T, F6 on Y, OUT_TOG on backslash) */
+&trans  &kp F1  &kp F2  &kp F3  &kp F4  &kp F5  &kp F6  &trans  &trans  &trans  &trans  &trans  &trans  &out OUT_TOG
+/* Row 2 — home row */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+/* Row 3 — bottom alpha (RSHFT = studio_unlock placeholder; UP = PgUp) */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &kp PG_UP  &trans
+/* Row 4 — modifiers (FN2 = BT_NXT; arrows = Home/PgDn/End) */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &bt BT_NXT  &trans  &kp HOME  &kp PG_DN  &kp END
             >;
         };
 
         fn2_layer {
-            /* All transparent — Step 4 fills in FN2 bindings (PRD §5.3). */
+            /* PRD §5.3 — hold FN2 (COL10/MX64) to activate.
+             * All transparent placeholder — user fills via ZMK Studio.
+             * Step 4 encoder bindings (SCRL_UP/SCRL_DN/MCLK) added in Step 5. */
             bindings = <
 &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
 &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
