@@ -16,8 +16,9 @@ zephyr_library_include_directories(${CMAKE_CURRENT_LIST_DIR})
 
 if(CONFIG_ZMK_DISPLAY)
     zephyr_library_include_directories(
-        ${CMAKE_SOURCE_DIR}/boards/shields/nice_view   # "widgets/status.h" etc.
-        ${CMAKE_SOURCE_DIR}/include                    # zmk core headers
+        ${CMAKE_SOURCE_DIR}/boards/shields/nice_view          # "widgets/status.h" etc.
+        ${CMAKE_SOURCE_DIR}/boards/shields/nice_view/widgets  # "util.h", "status.h" for local overrides
+        ${CMAKE_SOURCE_DIR}/include                           # zmk core headers
     )
 
     zephyr_library_sources(
