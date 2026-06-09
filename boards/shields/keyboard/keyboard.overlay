@@ -136,9 +136,9 @@ nice_view_spi: &spi1 {
             , <&mcp23017  8 GPIO_ACTIVE_HIGH>   /* COL8  GPB0 */
             , <&mcp23017  5 GPIO_ACTIVE_HIGH>   /* COL9  GPA5 (swapped: PCB routes COL9-10 to GPA5-6) */
             , <&mcp23017  6 GPIO_ACTIVE_HIGH>   /* COL10 GPA6 */
-            , <&mcp23017  3 GPIO_ACTIVE_HIGH>   /* COL11 GPA3 (swapped: PCB routes COL11-12 to GPA3-4) */
+            , <&mcp23017  7 GPIO_ACTIVE_HIGH>   /* COL11 GPA7 (swapped: PCB routes COL11 to GPA7) */
             , <&mcp23017  4 GPIO_ACTIVE_HIGH>   /* COL12 GPA4 */
-            , <&mcp23017  7 GPIO_ACTIVE_HIGH>   /* COL13 GPA7 */
+            , <&mcp23017  3 GPIO_ACTIVE_HIGH>   /* COL13 GPA3 (swapped: PCB routes COL13 to GPA3) */
             , <&mcp23017  2 GPIO_ACTIVE_HIGH>   /* COL14 GPA2 */
             ;
 
