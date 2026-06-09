@@ -32,8 +32,7 @@
 
 #include "display_mode_state_changed.h"
 #include "display_modes.h"
-#include "widgets/status.h"
-#include "widgets/util.h"
+#include "widgets/status.h"   /* also pulls in util.h (CANVAS_SIZE, rotate_canvas, etc.) */
 #include "widgets/wpm.h"
 #include "widgets/typing_test.h"
 
