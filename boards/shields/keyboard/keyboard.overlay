@@ -73,6 +73,17 @@ nice_view_spi: &spi1 {
     cs-gpios = <&gpio0 9 GPIO_ACTIVE_HIGH>;
 };
 
+/* ── nice!view display rotation ─────────────────────────────────────────────
+ * The display is physically mounted portrait with the connector/pins at the
+ * TOP edge.  The standard nice!view orientation has the connector at the
+ * BOTTOM, so the whole output needs a 180° hardware flip.  Combined with the
+ * 90° CW software rotate_canvas in the nice_view status widget, the effective
+ * rotation becomes 270° CW — correct for connector-at-top portrait mounting.
+ * display-rotation is a standard Zephyr property on the sharp,ls0xx binding. */
+&nice_view {
+    display-rotation = <180>;
+};
+
 /* ── I2C0 pinctrl override ───────────────────────────────────────────────────
  * Override the board's default I2C0 pins (P0.17/P0.20) so the encoder can use
  * those pins later. Hardware routes I2C to P1.07 (SDA) / P1.02 (SCL). No
