@@ -23,7 +23,7 @@
  *   fn2      &mkp MCLK  — requires CONFIG_ZMK_POINTING=y
  *
  * Step 13 polish:
- *   CapsLock → &caps_word (capitalises next word, auto-deactivates on space/Esc)
+ *   CapsLock → &kp CAPS   (standard toggle caps lock)
  *   Combos: LSHFT+RSHFT+BSPC → &bootloader | LSHFT+RSHFT+DEL → &sys_reset */
 
 / {
@@ -97,7 +97,7 @@
 /* ── Row 1: QWERTY ──────────────────────────────────────────────────────────── */
 &kp TAB   &kp Q  &kp W  &kp E  &kp R  &kp T  &kp Y  &kp U  &kp I  &kp O  &kp P  &kp LBKT  &kp RBKT  &kp BSLH
 /* ── Row 2: home row (13 keys; COL14 omitted — display cutout) ──────────────── */
-&caps_word &kp A  &kp S  &kp D  &kp F  &kp G  &kp H  &kp J  &kp K  &kp L  &kp SEMI &kp APOS &kp RET
+&kp CAPS  &kp A  &kp S  &kp D  &kp F  &kp G  &kp H  &kp J  &kp K  &kp L  &kp SEMI &kp APOS &kp RET
 /* ── Row 3: bottom alpha (MX55/COL14 = Del; adjustable) ────────────────────── */
 &kp LSHFT &kp Z  &kp X  &kp C  &kp V  &kp B  &kp N  &kp M  &kp COMMA &kp DOT &kp FSLH &kp RSHFT &kp UP &kp DEL
 /* ── Row 4: modifiers (13 keys; COL7 omitted — physical gap) ───────────────── *
