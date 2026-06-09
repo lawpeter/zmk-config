@@ -22,10 +22,13 @@ if(CONFIG_ZMK_DISPLAY)
 
     zephyr_library_sources(
         # nice_view widget implementations (compiled here because
-        # NICE_VIEW_WIDGET_STATUS=n skips them in the nice_view CMakeLists)
-        ${CMAKE_SOURCE_DIR}/boards/shields/nice_view/widgets/util.c
+        # NICE_VIEW_WIDGET_STATUS=n skips them in the nice_view CMakeLists).
+        # util.c and status.c are LOCAL OVERRIDES in widgets/ that apply the
+        # 270° CW rotation and the adjusted bottom-canvas offset for the
+        # connector-at-top portrait mounting.  bolt.c is unchanged upstream.
+        widgets/util.c
+        widgets/status.c
         ${CMAKE_SOURCE_DIR}/boards/shields/nice_view/widgets/bolt.c
-        ${CMAKE_SOURCE_DIR}/boards/shields/nice_view/widgets/status.c
 
         # Our multi-mode screen and mode-change event
         widgets/display_mode_state_changed.c

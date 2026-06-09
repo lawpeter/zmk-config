@@ -67,21 +67,10 @@
 
 /* Expose spi1 under the nice_view_spi alias that the nice_view shield requires.
  * Our keyboard.zmk.yml exposes [nice_view_header] so no adapter shield is needed.
- * CS is managed by the SPI controller via gpio: P0.09 (pad 24), active-high.
- *
- * display-rotation = <180>: the display is mounted portrait with the connector
- * at the TOP edge.  The standard nice!view has the connector at the BOTTOM, so
- * a 180° hardware flip is needed.  Combined with the 90° CW rotate_canvas in
- * the nice_view status widget, the net rotation is 270° CW — correct for
- * connector-at-top mounting.  The ls0xx@0 child node merges with the node
- * defined in nice_view.overlay; &nice_view cannot be used here because that
- * label is not yet defined when this overlay is parsed.                        */
+ * CS is managed by the SPI controller via gpio: P0.09 (pad 24), active-high.  */
 nice_view_spi: &spi1 {
     status = "okay";
     cs-gpios = <&gpio0 9 GPIO_ACTIVE_HIGH>;
-    ls0xx@0 {
-        display-rotation = <180>;
-    };
 };
 
 /* ── I2C0 pinctrl override ───────────────────────────────────────────────────
