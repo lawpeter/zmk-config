@@ -9,11 +9,22 @@
  * With 270° CW rotate_canvas (see local widgets/util.c), content drawn at
  * orig_y=5 maps to canvas_x=5 (near LEFT of canvas), not near the right as it
  * did with 90° CW.  The original -44 offset placed canvas_x=5 off-screen to
- * the left (screen_x=-39).  Offset 0 puts that content at screen_x=5 (visible)
- * while the middle canvas at x=24 naturally covers the right portion of this
- * canvas that has no meaningful layer content.
+ * the left (screen_x=-39).  Offset 0 puts that content at screen_x=5 (visible).
  *
- * All other code is identical to the upstream file.
+ * That fix has a side effect the original comment here got backwards: at
+ * offset 0, `bottom` (screen x=[0,68]) and `middle` (screen x=[24,92], the BLE
+ * profile circles) overlap across x=[24,68] — NOT "no meaningful content"
+ * there, that's most of 3 of the 5 profile circles. Both canvases opaque-fill
+ * their own full 68x68 area before drawing, and LVGL draws later-created
+ * siblings on top, so whichever canvas is created last wins the overlap.
+ * Originally `middle` was created before `bottom`, so `bottom`'s black
+ * background silently covered the profile circles underneath — invisible with
+ * 0-1 profiles paired, very visible once more profiles get bonded (issue found
+ * 2026-08-09). Fixed below by creating `bottom` before `middle`, so profile
+ * circles now win the overlap instead. Layer-name text there is comparatively
+ * low-stakes to occasionally clip.
+ *
+ * All other code is identical to the upstream file except this reordering.
  */
 
 #include <zephyr/kernel.h>
@@ -136,7 +147,8 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
 }
 
 static void draw_middle(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
-    lv_obj_t *canvas = lv_obj_get_child(widget, 1);
+    /* LOCAL CHANGE: index 2, not 1 — middle is now created after bottom. */
+    lv_obj_t *canvas = lv_obj_get_child(widget, 2);
 
     lv_draw_rect_dsc_t rect_black_dsc;
     init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
@@ -190,7 +202,8 @@ static void draw_middle(lv_obj_t *widget, lv_color_t cbuf[], const struct status
 }
 
 static void draw_bottom(lv_obj_t *widget, lv_color_t cbuf[], const struct status_state *state) {
-    lv_obj_t *canvas = lv_obj_get_child(widget, 2);
+    /* LOCAL CHANGE: index 1, not 2 — bottom is now created before middle. */
+    lv_obj_t *canvas = lv_obj_get_child(widget, 1);
 
     lv_draw_rect_dsc_t rect_black_dsc;
     init_rect_dsc(&rect_black_dsc, LVGL_BACKGROUND);
@@ -346,13 +359,18 @@ int zmk_widget_status_init(struct zmk_widget_status *widget, lv_obj_t *parent) {
     lv_obj_t *top = lv_canvas_create(widget->obj);
     lv_obj_align(top, LV_ALIGN_TOP_RIGHT, 0, 0);
     lv_canvas_set_buffer(top, widget->cbuf, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
-    lv_obj_t *middle = lv_canvas_create(widget->obj);
-    lv_obj_align(middle, LV_ALIGN_TOP_LEFT, 24, 0);
-    lv_canvas_set_buffer(middle, widget->cbuf2, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
+    /* LOCAL CHANGE: bottom is created before middle (was after) so that middle
+     * (BLE profile circles) wins the x=[24,68] overlap instead of getting
+     * silently covered by bottom's opaque background — see file header. This
+     * also means bottom is now lv_obj child index 1 and middle is index 2;
+     * draw_bottom()/draw_middle() below use the matching indices. */
     lv_obj_t *bottom = lv_canvas_create(widget->obj);
     /* LOCAL CHANGE: offset 0 instead of -44 — see file header for rationale. */
     lv_obj_align(bottom, LV_ALIGN_TOP_LEFT, 0, 0);
     lv_canvas_set_buffer(bottom, widget->cbuf3, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
+    lv_obj_t *middle = lv_canvas_create(widget->obj);
+    lv_obj_align(middle, LV_ALIGN_TOP_LEFT, 24, 0);
+    lv_canvas_set_buffer(middle, widget->cbuf2, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
 
     sys_slist_append(&widgets, &widget->node);
     widget_battery_status_init();
