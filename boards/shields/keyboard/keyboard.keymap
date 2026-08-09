@@ -105,25 +105,129 @@
 
         /* sym_layer symbol macros — each types a plain ASCII Espanso trigger
          * (";;" + mnemonic), which a host-side Espanso match file (see
-         * README.md) expands into the actual glyph. Naming convention:
-         * sym_<trigger-without-;;>. wait-ms/tap-ms start at 5ms — Espanso has
-         * to see each individual keystroke to detect the trigger, and firmware
-         * injection is much faster than human typing; raise these (10-15) if
-         * triggers get missed in testing before assuming anything else is
-         * wrong. Never wrap these in anything that could apply Shift — a
-         * shifted trigger (e.g. "::PI") won't match and will emit literal
-         * junk instead.
+         * espanso/symbols.yml and README.md) expands into the actual glyph.
+         * Naming convention: sym_<trigger-without-;;>. wait-ms/tap-ms start at
+         * 5ms — Espanso has to see each individual keystroke to detect the
+         * trigger, and firmware injection is much faster than human typing;
+         * raise these (10-15) if triggers get missed in testing before
+         * assuming anything else is wrong. Never wrap these in anything that
+         * could apply Shift — a shifted trigger (e.g. "::PI") won't match and
+         * will emit literal junk instead.
          *
-         * STAGED ROLLOUT (commit 1 of 2): only the 3 validation macros below
-         * are defined and wired into sym_layer — sym_pi, sym_isin, sym_rt.
-         * The remaining 42 symbols' macros + bindings land in a follow-up
-         * commit once these three are confirmed working on real hardware. */
+         * Confirmed working end-to-end (both macOS and Windows/Espanso) as of
+         * the commit that wired up the first 3 (sym_pi/sym_isin/sym_rt); all
+         * 45 are now defined and wired into sym_layer below. */
         ZMK_MACRO(sym_pi, wait-ms = <5>; tap-ms = <5>;
                   bindings = <&kp SEMI &kp SEMI &kp P &kp I>;)
         ZMK_MACRO(sym_isin, wait-ms = <5>; tap-ms = <5>;
                   bindings = <&kp SEMI &kp SEMI &kp I &kp S &kp I &kp N>;)
         ZMK_MACRO(sym_rt, wait-ms = <5>; tap-ms = <5>;
                   bindings = <&kp SEMI &kp SEMI &kp R &kp T>;)
+
+        /* ── Greek letters ──────────────────────────────────────────── */
+        ZMK_MACRO(sym_alpha, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp A &kp L &kp P &kp H &kp A>;)
+        ZMK_MACRO(sym_beta, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp B &kp E &kp T &kp A>;)
+        ZMK_MACRO(sym_gamma, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp G &kp A &kp M &kp M &kp A>;)
+        ZMK_MACRO(sym_delta, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp D &kp E &kp L &kp T &kp A>;)
+        ZMK_MACRO(sym_eps, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp E &kp P &kp S>;)
+        ZMK_MACRO(sym_zeta, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp Z &kp E &kp T &kp A>;)
+        ZMK_MACRO(sym_eta, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp E &kp T &kp A>;)
+        ZMK_MACRO(sym_theta, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp T &kp H &kp E &kp T &kp A>;)
+        ZMK_MACRO(sym_iota, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp I &kp O &kp T &kp A>;)
+        ZMK_MACRO(sym_kappa, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp K &kp A &kp P &kp P &kp A>;)
+        ZMK_MACRO(sym_lambda, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp L &kp A &kp M &kp B &kp D &kp A>;)
+        ZMK_MACRO(sym_mu, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp M &kp U>;)
+        ZMK_MACRO(sym_nu, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp N &kp U>;)
+        ZMK_MACRO(sym_rho, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp R &kp H &kp O>;)
+        ZMK_MACRO(sym_sigma, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp S &kp I &kp G &kp M &kp A>;)
+        ZMK_MACRO(sym_tau, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp T &kp A &kp U>;)
+        ZMK_MACRO(sym_phi, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp P &kp H &kp I>;)
+        ZMK_MACRO(sym_chi, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp C &kp H &kp I>;)
+        ZMK_MACRO(sym_psi, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp P &kp S &kp I>;)
+        ZMK_MACRO(sym_omega, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp O &kp M &kp E &kp G &kp A>;)
+
+        /* ── Number row: math / logic ──────────────────────────────── */
+        ZMK_MACRO(sym_pm, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp P &kp M>;)
+        ZMK_MACRO(sym_sub, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp S &kp U &kp B>;)
+        ZMK_MACRO(sym_yen, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp Y &kp E &kp N>;)
+        ZMK_MACRO(sym_pd, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp P &kp D>;)
+        ZMK_MACRO(sym_int, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp I &kp N &kp T>;)
+        ZMK_MACRO(sym_nabla, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp N &kp A &kp B &kp L &kp A>;)
+        ZMK_MACRO(sym_inf, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp I &kp N &kp F>;)
+        ZMK_MACRO(sym_sqrt, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp S &kp Q &kp R &kp T>;)
+        ZMK_MACRO(sym_deg, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp D &kp E &kp G>;)
+        ZMK_MACRO(sym_ne, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp N &kp E>;)
+        ZMK_MACRO(sym_approx, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp A &kp P &kp P &kp R &kp O &kp X>;)
+
+        /* ── Brackets & punctuation ────────────────────────────────── */
+        ZMK_MACRO(sym_fa, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp F &kp A>;)
+        ZMK_MACRO(sym_te, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp T &kp E>;)
+        ZMK_MACRO(sym_perp, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp P &kp E &kp R &kp P>;)
+        ZMK_MACRO(sym_tf, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp T &kp F>;)
+        ZMK_MACRO(sym_emd, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp E &kp M &kp D>;)
+        ZMK_MACRO(sym_le, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp L &kp E>;)
+        ZMK_MACRO(sym_ge, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp G &kp E>;)
+        ZMK_MACRO(sym_irb, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp I &kp R &kp B>;)
+
+        /* ── Arrows ────────────────────────────────────────────────── */
+        ZMK_MACRO(sym_up, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp U &kp P>;)
+        ZMK_MACRO(sym_dn, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp D &kp N>;)
+        ZMK_MACRO(sym_lt, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp L &kp T>;)
+
+        /* macOS's Consumer-page "Sleep" HID usage needs to be HELD, not
+         * tapped — a quick &kp press/release (whatever the physical encoder
+         * push happens to last) isn't enough for macOS to show the sleep
+         * confirmation; Windows/Linux act immediately but macOS specifically
+         * needs a sustained hold before it engages (same family of quirk as
+         * the physical power button needing a ~1.5s hold, not a tap). Fixed
+         * by wrapping &kp C_SLEEP in a macro that holds it for 1500ms
+         * (tap-ms) regardless of how briefly the encoder is actually
+         * pressed. 1500ms is a starting guess, not a verified minimum —
+         * raise it if the sleep dialog still doesn't appear in testing. */
+        ZMK_MACRO(mac_sleep, wait-ms = <0>; tap-ms = <1500>;
+                  bindings = <&kp C_SLEEP>;)
     };
 
     /* Device layer (index 3) activates only while sym_layer (1) AND fn_layer (2)
@@ -198,29 +302,23 @@
 
         sym_layer {
             display-name = "SYMBOLS";
-            /* Pure symbol layer (Espanso triggers — see behaviors block and
-             * README.md). Nothing else lives here — no F-keys, no BT actions.
-             * Q/S/C/J/M are deliberately &trans (not a gap to fill — a prior
-             * design decision, do not invent mappings).
-             *
-             * STAGED ROLLOUT (commit 1 of 2): only 3 validation macros are
-             * live below — sym_pi (P), sym_isin (3), sym_rt (Right) — to
-             * confirm the Espanso trigger pipeline end-to-end (both macOS and
-             * Windows) before the remaining 42 symbols are wired in a
-             * follow-up commit. Every other symbol position is &trans for now
-             * (inert, not leaking old F-key/BT bindings). */
+            /* Pure symbol layer (Espanso triggers — see behaviors block,
+             * espanso/symbols.yml, and README.md). Nothing else lives here —
+             * no F-keys, no BT actions. Q/S/C/J/M are deliberately &trans
+             * (not a gap to fill — a prior design decision, do not invent
+             * mappings). All 45 symbols confirmed working on real hardware. */
             sensor-bindings = <&inc_dec_kp C_PREV C_NEXT>;
             bindings = <
-/* Row 0 — Esc→~; number row math/logic (∈ on N3 is LIVE via sym_isin, rest pending) */
-&kp LS(GRAVE) &trans &trans &sym_isin &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-/* Row 1 — Greek W-P; π on P is LIVE via sym_pi, rest pending. Q unmapped (deliberate). */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &sym_pi  &trans  &trans  &trans
-/* Row 2 — Greek A,D,F,G,H,K,L + ∴/— ; S,J unmapped (deliberate). Pending. */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-/* Row 3 — Greek Z,X,V,B,N + ≤/≥/‽/↑ ; C,M unmapped (deliberate). Pending. */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-/* Row 4 — arrows: → on Right is LIVE via sym_rt, ←/↓ pending. Mod positions stay &trans. */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &sym_rt
+/* Row 0 — Esc→~; number row math/logic */
+&kp LS(GRAVE) &sym_pm &sym_sub &sym_isin &sym_yen &sym_pd &sym_int &sym_nabla &sym_inf &sym_sqrt &sym_deg &sym_ne &sym_approx &trans
+/* Row 1 — Greek W-P + brackets/backslash. Q unmapped (deliberate). */
+&trans  &trans  &sym_omega  &sym_eps  &sym_rho  &sym_tau  &sym_psi  &sym_mu  &sym_iota  &sym_sigma  &sym_pi  &sym_fa  &sym_te  &sym_perp
+/* Row 2 — Greek A,D,F,G,H,K,L + ∴/— ; S,J unmapped (deliberate). */
+&trans  &sym_alpha  &trans  &sym_delta  &sym_phi  &sym_gamma  &sym_theta  &trans  &sym_kappa  &sym_lambda  &sym_tf  &sym_emd  &trans
+/* Row 3 — Greek Z,X,V,B,N + ≤/≥/‽/↑ ; C,M unmapped (deliberate). */
+&trans  &sym_zeta  &sym_chi  &trans  &sym_nu  &sym_beta  &sym_eta  &trans  &sym_le  &sym_ge  &sym_irb  &trans  &sym_up  &trans
+/* Row 4 — arrows. Mod positions stay &trans. */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &sym_lt  &sym_dn  &sym_rt
 /* Row 5 — encoder push: play/pause */
 &kp C_PP
             >;
@@ -295,11 +393,12 @@
              * Rotate: display brightness up/down (Consumer page — well
              * supported on macOS, frequently ignored by Windows for external
              * keyboards; that's a host-OS limitation, not a firmware bug).
-             * Press: system sleep, via &kp C_SLEEP (Consumer page "Sleep",
-             * 0x32) rather than K_SLEEP — verified against hid.c: zmk_hid_press
-             * only handles the Keyboard and Consumer HID pages, so K_SLEEP
-             * (an unofficial reserved Keyboard-page usage) would silently do
-             * nothing, while C_SLEEP is a real standardized usage. */
+             * Press: system sleep, via &mac_sleep (Consumer page "Sleep",
+             * 0x32, held for 1500ms — see behaviors block comment on why a
+             * plain tap isn't enough on macOS) rather than K_SLEEP — verified
+             * against hid.c: zmk_hid_press only handles the Keyboard and
+             * Consumer HID pages, so K_SLEEP (an unofficial reserved
+             * Keyboard-page usage) would silently do nothing. */
             sensor-bindings = <&inc_dec_kp C_BRI_DN C_BRI_UP>;
             bindings = <
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
@@ -307,7 +406,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&kp C_SLEEP
+&mac_sleep
             >;
         };
 

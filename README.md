@@ -83,11 +83,8 @@ real glyph — identically configured on macOS and Windows, no OS-specific firmw
 logic at all. **You must install and configure Espanso for symbols to work at all**
 — see [Espanso setup](#espanso-setup-required-for-symbols) below.
 
-> **Rollout status**: as of the latest commit, only **π** (`P`, trigger `;;pi`), **∈**
-> (`3`, trigger `;;isin`), and **→** (`Right`, trigger `;;rt`) are wired up, to
-> validate the trigger pipeline on real hardware before the full table below ships.
-> Every other position on this layer is currently inert (`&trans`). The table below
-> is the complete intended design.
+All 45 symbols below are wired up and confirmed working on real hardware (macOS and
+Windows, both via Espanso).
 
 **Greek letters:**
 
