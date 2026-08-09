@@ -118,9 +118,9 @@
         ZMK_MACRO(mac_mode_disable, bindings = <&layer_off 5 &uc UC_SET_WIN_COMPOSE>;)
     };
 
-    /* PC mode targets Windows+WinCompose (see keymap header comment). WIN_COMPOSE
-     * is already the module's own built-in default; set explicitly for clarity
-     * and to match mac_mods' boot-default-off (PC) state. */
+    // PC mode targets Windows+WinCompose (see keymap header comment). WIN_COMPOSE
+    // is already the module's own built-in default; set explicitly for clarity
+    // and to match mac_mods' boot-default-off (PC) state.
     &uc {
         default-mode = <UC_MODE_WIN_COMPOSE>;
         minimum-length = <4>;
