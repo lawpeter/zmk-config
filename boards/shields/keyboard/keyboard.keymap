@@ -52,6 +52,14 @@
  * device layer, so neither can ever shadow base-layer typing. Right `<>` (COL11)
  * deliberately stays Control in Mac mode — see mac_mods layer comment below. */
 
+ /* PC mode targets Windows+WinCompose (see keymap header comment). WIN_COMPOSE
+     * is already the module's own built-in default; set explicitly for clarity
+     * and to match mac_mods' boot-default-off (PC) state. */
+    &uc {
+        default-mode = <UC_MODE_WIN_COMPOSE>;
+        minimum-length = <4>;
+    };
+
 / {
     behaviors {
         /* Sensor-rotate behavior using &msc (mouse scroll) for the fn_layer. */
@@ -116,14 +124,6 @@
          * mode together in one keypress. Live only on device_layer's `9`/`0`. */
         ZMK_MACRO(mac_mode_enable, bindings = <&layer_on 5 &uc UC_SET_MACOS>;)
         ZMK_MACRO(mac_mode_disable, bindings = <&layer_off 5 &uc UC_SET_WIN_COMPOSE>;)
-    };
-
-    // PC mode targets Windows+WinCompose (see keymap header comment). WIN_COMPOSE
-    // is already the module's own built-in default; set explicitly for clarity
-    // and to match mac_mods' boot-default-off (PC) state.
-    &uc {
-        default-mode = <UC_MODE_WIN_COMPOSE>;
-        minimum-length = <4>;
     };
 
     /* Device layer (index 3) activates only while sym_layer (1) AND fn_layer (2)
