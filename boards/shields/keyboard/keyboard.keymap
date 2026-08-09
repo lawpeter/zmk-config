@@ -52,13 +52,19 @@
  * device layer, so neither can ever shadow base-layer typing. Right `<>` (COL11)
  * deliberately stays Control in Mac mode — see mac_mods layer comment below. */
 
- /* PC mode targets Windows+WinCompose (see keymap header comment). WIN_COMPOSE
-     * is already the module's own built-in default; set explicitly for clarity
-     * and to match mac_mods' boot-default-off (PC) state. */
-    &uc {
-        default-mode = <UC_MODE_WIN_COMPOSE>;
-        minimum-length = <4>;
-    };
+/* PC mode targets Windows+WinCompose (see keymap header comment). WIN_COMPOSE is
+ * already the module's own built-in default; set explicitly for clarity and to
+ * match mac_mods' boot-default-off (PC) state.
+ *
+ * NOTE: this MUST stay a top-level fragment (sibling of `/ { ... }` below), not
+ * nested inside it — `&label { ... };` is a devicetree node reference, which is
+ * only valid at the top level of the file. Nesting it inside `/ { ... }` is a
+ * "parse error: expected node name, property name, or '}'" at compile time
+ * (hit this for real — see git history around the layer-restructure commit). */
+&uc {
+    default-mode = <UC_MODE_WIN_COMPOSE>;
+    minimum-length = <4>;
+};
 
 / {
     behaviors {
@@ -172,6 +178,7 @@
         compatible = "zmk,keymap";
 
         default_layer {
+            display-name = "BASE";
             sensor-bindings = <&inc_dec_kp C_VOL_DN C_VOL_UP>;
             bindings = <
 /* ── Row 0: number row (COL0 = Esc/hold-tap, was &kp GRAVE) ─────────────────── */
@@ -196,6 +203,7 @@
         };
 
         sym_layer {
+            display-name = "SYMBOLS";
             /* Pure Unicode/math symbol layer. Nothing else lives here — no
              * F-keys, no BT actions. Q/S/C/J/M are deliberately &trans (not a
              * gap to fill — a prior design decision, do not invent mappings).
@@ -224,6 +232,7 @@
         };
 
         fn_layer {
+            display-name = "FN";
             /* Hold f (COL10/mo2) to activate.
              *
              * Number row:  1-9 → F1-F9,  0 → F10,  - → F11,  = → F12,  Bksp → Del
@@ -248,6 +257,7 @@
         };
 
         device_layer {
+            display-name = "DEVICE";
             /* Conditional layer — active only while ⊃+f are BOTH held.
              *
              * Number row:
@@ -282,6 +292,7 @@
         };
 
         esc_layer {
+            display-name = "BRIGHT";
             /* Hold Esc to activate. Encoder only — all key positions &trans.
              *
              * Rotate: display brightness up/down (Consumer page — well
@@ -304,6 +315,7 @@
         };
 
         mac_mods {
+            display-name = "MAC MODE";
             /* Activated by &layer_on 5 / deactivated by &layer_off 5 from
              * device_layer's `9`/`0` keys (mac_mode_enable/mac_mode_disable).
              * &trans everywhere except the 4 modifier positions below — never
