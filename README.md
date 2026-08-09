@@ -10,6 +10,7 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 - [Layer overview](#layer-overview)
 - [Base layer](#base-layer)
 - [Symbol layer (⊃)](#symbol-layer-⊃)
+- [Espanso setup (required for symbols)](#espanso-setup-required-for-symbols)
 - [Function layer (f)](#function-layer-f)
 - [Device layer (⊃ + f)](#device-layer--f)
 - [Esc key — 4-way behavior](#esc-key--4-way-behavior)
@@ -38,7 +39,7 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 | 2 | `fn_layer` | hold `f` (momentary) |
 | 3 | `device_layer` | hold `⊃` **and** `f` together (conditional layer — neither key alone triggers it) |
 | 4 | `esc_layer` | hold `Esc` |
-| 5 | `mac_mods` | toggled on/off from the device layer (`9`/`0`) — see [Mac / PC mode switch](#mac--pc-mode-switch) |
+| 5 | `mac_mods` | toggled on/off from the device layer (`0`) — see [Mac / PC mode switch](#mac--pc-mode-switch) |
 | 6-8 | `extra1`–`extra3` | reserved, empty — for ad-hoc ZMK Studio customization only |
 
 Layers 1, 2, and 4 are momentary (active only while held). Layer 3 requires both
@@ -72,39 +73,104 @@ Standard QWERTY, with these keyboard-specific points:
 Hold `⊃` to type Greek letters, math/logic symbols, and Unicode arrows. Nothing else
 lives on this layer — no F-keys, no Bluetooth actions.
 
-> **Rollout status**: as of the latest commit, only **π** (`P`), **∈** (`3`), and
-> **→** (`Right`) are wired up, to validate the Unicode input pipeline on real
-> hardware before the full table below ships. Every other position on this layer is
-> currently inert (`&trans`). The table below is the complete intended design.
+**How this actually works**: the firmware does *not* send Unicode codepoints
+directly (an earlier revision tried that via `urob/zmk-unicode` and macOS's Option-hex
+input — see git history; it required manually switching macOS's active input source
+per symbol, which was unworkable). Instead, each symbol key types a short, plain
+**ASCII trigger string** (e.g. `;;pi`), and a host-side text expander,
+**[Espanso](https://espanso.org)**, watches for that string and replaces it with the
+real glyph — identically configured on macOS and Windows, no OS-specific firmware
+logic at all. **You must install and configure Espanso for symbols to work at all**
+— see [Espanso setup](#espanso-setup-required-for-symbols) below.
+
+> **Rollout status**: as of the latest commit, only **π** (`P`, trigger `;;pi`), **∈**
+> (`3`, trigger `;;isin`), and **→** (`Right`, trigger `;;rt`) are wired up, to
+> validate the trigger pipeline on real hardware before the full table below ships.
+> Every other position on this layer is currently inert (`&trans`). The table below
+> is the complete intended design.
 
 **Greek letters:**
 
-| Key | W | E | R | T | Y | U | I | O | P | A | D | F | G | H | K | L | Z | X | V | B | N |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Symbol | ω | ε | ρ | τ | ψ | μ | ι | σ | π | α | δ | φ | γ | θ | κ | λ | ζ | χ | ν | β | η |
+| Key | Symbol | Trigger | Key | Symbol | Trigger | Key | Symbol | Trigger |
+|---|---|---|---|---|---|---|---|---|
+| W | ω | `;;omega` | A | α | `;;alpha` | Z | ζ | `;;zeta` |
+| E | ε | `;;eps` | D | δ | `;;delta` | X | χ | `;;chi` |
+| R | ρ | `;;rho` | F | φ | `;;phi` | V | ν | `;;nu` |
+| T | τ | `;;tau` | G | γ | `;;gamma` | B | β | `;;beta` |
+| Y | ψ | `;;psi` | H | θ | `;;theta` | N | η | `;;eta` |
+| U | μ | `;;mu` | K | κ | `;;kappa` | | | |
+| I | ι | `;;iota` | L | λ | `;;lambda` | | | |
+| O | σ | `;;sigma` | | | | | | |
+| P | π | `;;pi` | | | | | | |
 
 `Q`, `S`, `C`, `J`, `M` are deliberately unmapped (`&trans`) — not a gap to fill in later.
 
 **Number row (math/logic):**
 
-| Key | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 0 | `-` | `=` |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Symbol | ± | ⊆ | ∈ | ¥ | ∂ | ∫ | ∇ | ∞ | √ | ° | ≠ | ≈ |
+| Key | Symbol | Trigger | Key | Symbol | Trigger |
+|---|---|---|---|---|---|
+| 1 | ± | `;;pm` | 7 | ∇ | `;;nabla` |
+| 2 | ⊆ | `;;sub` | 8 | ∞ | `;;inf` |
+| 3 | ∈ | `;;isin` | 9 | √ | `;;sqrt` |
+| 4 | ¥ | `;;yen` | 0 | ° | `;;deg` |
+| 5 | ∂ | `;;pd` | `-` | ≠ | `;;ne` |
+| 6 | ∫ | `;;int` | `=` | ≈ | `;;approx` |
 
 **Punctuation:**
 
-| Key | `[` | `]` | `\` | `;` | `'` | `,` | `.` | `/` | Esc |
-|---|---|---|---|---|---|---|---|---|---|
-| Symbol | ∀ | ∃ | ⊥ | ∴ | — (em dash) | ≤ | ≥ | ‽ (interrobang) | ~ |
+| Key | Symbol | Trigger | Key | Symbol | Trigger |
+|---|---|---|---|---|---|
+| `[` | ∀ | `;;fa` | `,` | ≤ | `;;le` |
+| `]` | ∃ | `;;te` | `.` | ≥ | `;;ge` |
+| `\` | ⊥ | `;;perp` | `/` | ‽ (interrobang) | `;;irb` |
+| `;` | ∴ | `;;tf` | Esc | ~ | *(plain `&kp LS(GRAVE)`, not a trigger)* |
+| `'` | — (em dash) | `;;emd` | | | |
 
 **Arrows** (literal glyphs, not navigation — navigation stays on the base layer):
 
-| Key | Up | Down | Left | Right |
-|---|---|---|---|---|
-| Symbol | ↑ | ↓ | ← | → |
+| Key | Symbol | Trigger |
+|---|---|---|
+| Up | ↑ | `;;up` |
+| Down | ↓ | `;;dn` |
+| Left | ← | `;;lt` |
+| Right | → | `;;rt` |
 
-Symbols are typed via the [`urob/zmk-unicode`](#dependencies) module, whose input
-method depends on [Mac / PC mode](#mac--pc-mode-switch).
+The canonical, always-up-to-date trigger table (with codepoints) is
+[`espanso/symbols.yml`](espanso/symbols.yml) — copy it into your Espanso config rather
+than retyping from this table.
+
+---
+
+## Espanso setup (required for symbols)
+
+The [symbol layer](#symbol-layer-⊃) does nothing on its own — it only types plain
+ASCII trigger strings. Without Espanso installed, running, and configured with this
+board's match file, those triggers just sit there as literal text (`;;pi` stays
+`;;pi`, it never becomes π).
+
+1. Install [Espanso](https://espanso.org/install/) on every machine you use this
+   board with (macOS **and** Windows — same tool, same config, on both).
+2. Copy [`espanso/symbols.yml`](espanso/symbols.yml) from this repo into your
+   Espanso match directory:
+   - macOS: `~/Library/Application Support/espanso/match/symbols.yml`
+   - Windows: `%APPDATA%\espanso\match\symbols.yml`
+   - (Run `espanso path config` if unsure where your config actually lives.)
+3. Restart Espanso (`espanso restart`) after adding or editing the match file.
+4. Make sure Espanso is set to start automatically (its installer usually offers
+   this) — if it's not running, triggers just do nothing.
+
+**Trigger scheme**: every trigger is `;;` + a short mnemonic (`;;pi`, `;;isin`,
+`;;omega`, …). No trigger is ever a prefix of another — Espanso fires on the first
+exact match it sees, so a shorter trigger sharing a prefix with a longer one would
+permanently shadow it. This is deliberate and preserved by design; if you ever add a
+new symbol, keep that constraint (see the comment at the top of
+[`espanso/symbols.yml`](espanso/symbols.yml)).
+
+**If triggers get missed** (the firmware types `;;pi` but nothing happens, or only
+part of it registers): the sym_layer macros inject keystrokes with 5ms timing
+(`wait-ms`/`tap-ms` in `keyboard.keymap`), which is much faster than human typing —
+Espanso needs to actually see each individual keystroke to detect the trigger. Try
+raising those to 10-15ms before assuming anything else is wrong.
 
 ---
 
@@ -141,8 +207,7 @@ the Mac/PC mode switch.
 | `6` | Clear current BT profile |
 | `7` | Next BT profile |
 | `8` | Previous BT profile |
-| `9` | **Switch to Mac mode** — see below |
-| `0` | **Switch to PC mode** — see below |
+| `0` | **Toggle Mac/PC mode** — see below |
 | `\` | Toggle USB / BLE output (`OUT_TOG`) |
 
 Encoder rotation is intentionally unbound here (falls through to `f`'s scroll
@@ -184,16 +249,18 @@ Windows for external keyboards; this is a host-OS limitation, not a firmware bug
 
 ## Mac / PC mode switch
 
-The board has two "modes" for how modifier keys and Unicode symbols behave, switched
-from the [device layer](#device-layer--f):
+The board has two "modes" for how the modifier keys behave, switched from the
+[device layer](#device-layer--f):
 
-- **`9`** → Mac mode
-- **`0`** → PC mode (**boot default**)
+- **`0`** toggles between PC mode (**boot default**) and Mac mode.
 
-These are deliberately two explicit "set" actions, not a single toggle — pressing `9`
-always lands you in Mac mode regardless of the current state, and same for `0` and PC
-mode, so the modifier profile and the Unicode input method (below) can never drift
-out of sync with each other.
+This is a plain flip toggle (not two separate keys) — safe here because it's the
+*only* thing tied to it (an earlier revision also kept a Unicode input mode in sync
+with this switch and needed two explicit "set" keys to avoid desyncing the two; that
+requirement went away once [symbols moved to Espanso](#espanso-setup-required-for-symbols),
+which needs no OS-mode awareness at all). It only exists on the momentary device
+layer, so it can never fire during normal typing — `0` always types a plain zero
+unless you're holding `⊃`+`f`.
 
 **What changes between modes:**
 
@@ -212,14 +279,9 @@ a terminal (there's no Cmd equivalent for SIGINT), `Ctrl+←/→` for Spaces swi
 So: left `<>` and `⌘` both become Cmd (whichever your muscle memory reaches for),
 right `<>` stays Control.
 
-**Unicode input method also switches with this**, since [symbol-layer](#symbol-layer-⊃)
-glyphs need an OS-specific input method (there's no universal HID "type this Unicode
-character" mechanism):
-
-| Mode | Unicode method |
-|---|---|
-| PC mode | **Windows via [WinCompose](https://github.com/samhocevar/WinCompose)** — see [Known limitations](#known-limitations) |
-| Mac mode | macOS Unicode Hex Input |
+Unlike the modifier profile, [symbol-layer](#symbol-layer-⊃) output doesn't depend
+on this switch at all anymore — Espanso triggers work identically regardless of
+Mac/PC mode.
 
 ---
 
@@ -325,17 +387,15 @@ Declared in `config/west.yml`:
 | Module | Purpose | Pinned to |
 |---|---|---|
 | [`zmkfirmware/zmk`](https://github.com/zmkfirmware/zmk) | ZMK firmware core | `v0.3` |
-| [`urob/zmk-unicode`](https://github.com/urob/zmk-unicode) | Unicode codepoint input for the [symbol layer](#symbol-layer-⊃) — vanilla ZMK has no built-in Unicode support | `v0.3` tag |
 
 **External to the firmware — required on the host machine, not installed by
 flashing:**
 
-- **[WinCompose](https://github.com/samhocevar/WinCompose)** must be installed on
-  any Windows machine you use this board with, for symbol-layer glyphs to type
-  correctly in PC mode. It is *not* preinstalled on a fresh Windows machine — this
-  is a real setup step, not optional. Without it, PC-mode Unicode output will not
-  work correctly (see [Known limitations](#known-limitations)).
-- macOS needs no extra software — Unicode Hex Input is a built-in input source.
+- **[Espanso](https://espanso.org)** must be installed, running, and configured with
+  this board's match file on every machine you use this board with (macOS **and**
+  Windows) — see [Espanso setup](#espanso-setup-required-for-symbols). Without it,
+  the [symbol layer](#symbol-layer-⊃) types literal `;;pi`-style trigger strings
+  instead of glyphs.
 
 Build is CI-only via GitHub Actions (`.github/workflows/build-user-config.yml`) — no
 local Zephyr toolchain is required or expected for normal use of this repo.
@@ -349,15 +409,16 @@ local Zephyr toolchain is required or expected for normal use of this repo.
   Windows frequently ignores for *external* keyboards (as opposed to a laptop's
   built-in keyboard). This is a Windows/host-OS limitation, not something the
   firmware can work around.
-- **PC mode's Unicode support targets Windows specifically, not Linux.** If you use
-  this board with a Linux PC, the Ctrl-key modifier layout in PC mode still works
-  fine, but symbol-layer glyphs will not type correctly — WinCompose has no Linux
-  equivalent wired up in this configuration.
-- **WinCompose is a required install on Windows**, not bundled with the firmware —
-  see [Dependencies](#dependencies).
-- **Mac/PC mode and the Unicode input mode reset to PC/default on every reboot** —
-  neither is saved to flash. If you reboot while in Mac mode, you'll need to press
-  `9` again after the board comes back up.
+- **Espanso is a required install on every host** (macOS and Windows both), not
+  bundled with the firmware — see [Dependencies](#dependencies). Without it running,
+  the symbol layer just types literal `;;pi`-style text.
+- **Espanso has to be running for symbols to work at all**, and some apps (certain
+  games, some terminal emulators, apps that grab exclusive keyboard input) don't
+  respect system-wide text expansion — symbol triggers may not expand there even
+  with Espanso running correctly everywhere else.
+- **Mac/PC mode resets to PC (default) on every reboot** — it isn't saved to flash.
+  If you reboot while in Mac mode, press `0` (holding `⊃`+`f`) again once the board
+  comes back up.
 - **Display modes 4 (Volume), 6 (Uptime), and 7 (Animation) are static placeholders**
   — they show fixed text, not live data. ZMK has no volume state to read, and the
   uptime/animation modes were never built out beyond a label.

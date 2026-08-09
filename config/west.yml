@@ -4,20 +4,11 @@ manifest:
   remotes:
     - name: zmkfirmware
       url-base: https://github.com/zmkfirmware
-    - name: urob
-      url-base: https://github.com/urob
     # Additional modules containing boards/shields/custom code can be listed here as well
     # See https://docs.zephyrproject.org/3.2.0/develop/west/manifest.html#projects
   projects:
     - name: zmk
       remote: zmkfirmware
       import: app/west.yml
-    # urob/zmk-unicode: Unicode input for the sym_layer symbol table. Pinned to
-    # the "v0.3" tag (resolves to commit 3e8ca744e5c3b6f430b3713f3e45b806ce89be7b
-    # as of this pin, verified via the GitHub API) — this module tags its
-    # releases to track the ZMK version line, independent of ZMK's own tags.
-    - name: zmk-unicode
-      remote: urob
-      revision: v0.3
   self:
     path: config

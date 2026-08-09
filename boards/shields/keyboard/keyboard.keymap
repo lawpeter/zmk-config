@@ -1,5 +1,4 @@
 #include <behaviors.dtsi>
-#include <behaviors/unicode.dtsi>
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/bt.h>
 #include <dt-bindings/zmk/outputs.h>
@@ -7,12 +6,12 @@
 
 /* Layer structure (index = declaration order in `keymap { }` below):
  *   0  default_layer — base QWERTY
- *   1  sym_layer     — pure Unicode/math symbol layer      (hold ⊃/COL9, &mo 1)
+ *   1  sym_layer     — pure symbol layer (Espanso triggers)  (hold ⊃/COL9, &mo 1)
  *   2  fn_layer      — F-keys, navigation, studio/typing    (hold f/COL10, &mo 2)
  *   3  device_layer   — BT management + Mac/PC mode switch  (conditional: ⊃+f held)
  *   4  esc_layer      — brightness/sleep                    (hold Esc)
- *   5  mac_mods       — Mac-mode modifier overrides          (&layer_on/&layer_off 5,
- *                        fired from device_layer's `9`/`0` keys)
+ *   5  mac_mods       — Mac-mode modifier overrides          (&tog 5, from
+ *                        device_layer's `0` key)
  *   6-8 extra1-3      — reserved for ZMK Studio expansion
  *
  * NOTE: extra1-3 shifted from indices 3-5 to 6-8 in this revision (device_layer,
@@ -20,10 +19,15 @@
  * customizations on this board are keyed to the OLD indices — run "Restore Stock
  * Settings" in Studio after flashing before re-customizing.
  *
- * Unicode symbols are emitted via the urob/zmk-unicode module (&uc behavior,
- * config/west.yml). PC mode targets Windows+WinCompose specifically (not Linux) —
- * &uc's mode is switched in lockstep with the Mac/PC modifier profile via the
- * mac_mode_enable/mac_mode_disable macros on device_layer's `9`/`0` keys.
+ * Symbols are NOT Unicode-macro'd by the firmware (REVISED — see git history:
+ * the original urob/zmk-unicode approach needed macOS's Unicode Hex Input to be
+ * the *active* input source, which was unworkable for a user with multiple input
+ * sources typing symbols one at a time). Instead, sym_layer keys type a plain
+ * ASCII trigger string (e.g. `;;pi`) via ordinary &kp taps, and a host-side text
+ * expander (Espanso — https://espanso.org, identical config on macOS/Windows)
+ * replaces it with the glyph. This makes symbol output fully OS-agnostic with no
+ * firmware-side OS awareness needed at all — see each sym_* macro below and
+ * README.md for the full trigger table and Espanso setup.
  *
  * Encoder (sensor index 0) — see keymap.c resolution: highest active layer with a
  * `sensor-bindings` entry wins; layers that omit it fall through to the next one
@@ -47,24 +51,12 @@
  * bind by physical position, not by what's currently bound there.
  *
  * Mac/PC modifier profile (mac_mods, layer 5): boot default is PC (layer 5 off).
- * device_layer `9` → Mac mode on (&layer_on 5 + Unicode → macOS). `0` → PC mode
- * (&layer_off 5 + Unicode → WinCompose). Both keys only exist on the momentary
- * device layer, so neither can ever shadow base-layer typing. Right `<>` (COL11)
- * deliberately stays Control in Mac mode — see mac_mods layer comment below. */
-
-/* PC mode targets Windows+WinCompose (see keymap header comment). WIN_COMPOSE is
- * already the module's own built-in default; set explicitly for clarity and to
- * match mac_mods' boot-default-off (PC) state.
- *
- * NOTE: this MUST stay a top-level fragment (sibling of `/ { ... }` below), not
- * nested inside it — `&label { ... };` is a devicetree node reference, which is
- * only valid at the top level of the file. Nesting it inside `/ { ... }` is a
- * "parse error: expected node name, property name, or '}'" at compile time
- * (hit this for real — see git history around the layer-restructure commit). */
-&uc {
-    default-mode = <UC_MODE_WIN_COMPOSE>;
-    minimum-length = <4>;
-};
+ * device_layer `0` → &tog 5, a plain flip toggle — safe because it's the ONLY
+ * binding involved (no Unicode mode to keep in sync anymore) and it only exists
+ * on the momentary device layer, so it can never fire during normal typing
+ * (mac_mods itself is &trans at that position, so `0` always types a zero
+ * outside of holding ⊃+f). Right `<>` (COL11) deliberately stays Control in Mac
+ * mode — see mac_mods layer comment below. */
 
 / {
     behaviors {
@@ -111,25 +103,27 @@
             display-name = "Esc Hold-Tap";
         };
 
-        /* Idempotent layer activate/deactivate (not flip) — used so the Mac/PC
-         * mode switch is two explicit "set" keys instead of a single toggle
-         * that could desync from the Unicode input mode. */
-        layer_on: layer_on {
-            compatible = "zmk,behavior-toggle-layer";
-            #binding-cells = <1>;
-            toggle-mode = "on";
-        };
-
-        layer_off: layer_off {
-            compatible = "zmk,behavior-toggle-layer";
-            #binding-cells = <1>;
-            toggle-mode = "off";
-        };
-
-        /* Mac/PC mode switch — ties mac_mods (layer 5) and the Unicode input
-         * mode together in one keypress. Live only on device_layer's `9`/`0`. */
-        ZMK_MACRO(mac_mode_enable, bindings = <&layer_on 5 &uc UC_SET_MACOS>;)
-        ZMK_MACRO(mac_mode_disable, bindings = <&layer_off 5 &uc UC_SET_WIN_COMPOSE>;)
+        /* sym_layer symbol macros — each types a plain ASCII Espanso trigger
+         * (";;" + mnemonic), which a host-side Espanso match file (see
+         * README.md) expands into the actual glyph. Naming convention:
+         * sym_<trigger-without-;;>. wait-ms/tap-ms start at 5ms — Espanso has
+         * to see each individual keystroke to detect the trigger, and firmware
+         * injection is much faster than human typing; raise these (10-15) if
+         * triggers get missed in testing before assuming anything else is
+         * wrong. Never wrap these in anything that could apply Shift — a
+         * shifted trigger (e.g. "::PI") won't match and will emit literal
+         * junk instead.
+         *
+         * STAGED ROLLOUT (commit 1 of 2): only the 3 validation macros below
+         * are defined and wired into sym_layer — sym_pi, sym_isin, sym_rt.
+         * The remaining 42 symbols' macros + bindings land in a follow-up
+         * commit once these three are confirmed working on real hardware. */
+        ZMK_MACRO(sym_pi, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp P &kp I>;)
+        ZMK_MACRO(sym_isin, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp I &kp S &kp I &kp N>;)
+        ZMK_MACRO(sym_rt, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp R &kp T>;)
     };
 
     /* Device layer (index 3) activates only while sym_layer (1) AND fn_layer (2)
@@ -204,28 +198,29 @@
 
         sym_layer {
             display-name = "SYMBOLS";
-            /* Pure Unicode/math symbol layer. Nothing else lives here — no
-             * F-keys, no BT actions. Q/S/C/J/M are deliberately &trans (not a
-             * gap to fill — a prior design decision, do not invent mappings).
+            /* Pure symbol layer (Espanso triggers — see behaviors block and
+             * README.md). Nothing else lives here — no F-keys, no BT actions.
+             * Q/S/C/J/M are deliberately &trans (not a gap to fill — a prior
+             * design decision, do not invent mappings).
              *
-             * STAGED ROLLOUT (commit 1 of 2): only 3 validation symbols are
-             * live below — π (P), ∈ (3), → (Right) — to confirm the Unicode
-             * pipeline end-to-end (both Mac and PC/WinCompose mode) before the
-             * remaining ~37 symbols are wired in a follow-up commit. Every
-             * other symbol position is &trans for now (inert, not leaking old
-             * F-key/BT bindings). */
+             * STAGED ROLLOUT (commit 1 of 2): only 3 validation macros are
+             * live below — sym_pi (P), sym_isin (3), sym_rt (Right) — to
+             * confirm the Espanso trigger pipeline end-to-end (both macOS and
+             * Windows) before the remaining 42 symbols are wired in a
+             * follow-up commit. Every other symbol position is &trans for now
+             * (inert, not leaking old F-key/BT bindings). */
             sensor-bindings = <&inc_dec_kp C_PREV C_NEXT>;
             bindings = <
-/* Row 0 — Esc→~; number row math/logic (∈ on N3 is LIVE, rest pending) */
-&kp LS(GRAVE) &trans &trans &uc 0x2208 0x0 &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
-/* Row 1 — Greek W-P; π on P is LIVE, rest pending. Q unmapped (deliberate). */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &uc 0x3C0 0x0  &trans  &trans  &trans
+/* Row 0 — Esc→~; number row math/logic (∈ on N3 is LIVE via sym_isin, rest pending) */
+&kp LS(GRAVE) &trans &trans &sym_isin &trans &trans &trans &trans &trans &trans &trans &trans &trans &trans
+/* Row 1 — Greek W-P; π on P is LIVE via sym_pi, rest pending. Q unmapped (deliberate). */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &sym_pi  &trans  &trans  &trans
 /* Row 2 — Greek A,D,F,G,H,K,L + ∴/— ; S,J unmapped (deliberate). Pending. */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 /* Row 3 — Greek Z,X,V,B,N + ≤/≥/‽/↑ ; C,M unmapped (deliberate). Pending. */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-/* Row 4 — arrows: → on Right is LIVE, ←/↓ pending. Mod positions stay &trans. */
-&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &uc 0x2192 0x0
+/* Row 4 — arrows: → on Right is LIVE via sym_rt, ←/↓ pending. Mod positions stay &trans. */
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &sym_rt
 /* Row 5 — encoder push: play/pause */
 &kp C_PP
             >;
@@ -265,8 +260,10 @@
              *   6   → BT clear current profile
              *   7   → BT_NXT  (cycle forward)
              *   8   → BT_PRV  (cycle backward)
-             *   9   → Mac mode on  (mac_mode_enable: layer 5 on + Unicode→macOS)
-             *   0   → PC mode on   (mac_mode_disable: layer 5 off + Unicode→WinCompose)
+             *   0   → &tog 5  — flip Mac/PC modifier profile (mac_mods). Plain
+             *         flip is safe here: it's the only binding involved (no
+             *         Unicode mode to keep in sync) and only reachable while
+             *         holding ⊃+f, so it can never fire during normal typing.
              * Backslash → OUT_TOG  (toggle USB / BLE output)
              * All other keys transparent.
              *
@@ -277,7 +274,7 @@
              * accepted for this layer's &trans key positions. */
             bindings = <
 /* Row 0 — BT management + Mac/PC mode switch */
-&trans  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR  &bt BT_NXT  &bt BT_PRV  &mac_mode_enable  &mac_mode_disable  &trans  &trans  &trans
+&trans  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR  &bt BT_NXT  &bt BT_PRV  &trans  &tog 5  &trans  &trans  &trans
 /* Row 1 — backslash → OUT_TOG */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &out OUT_TOG
 /* Row 2 — home row */
@@ -316,12 +313,10 @@
 
         mac_mods {
             display-name = "MAC MODE";
-            /* Activated by &layer_on 5 / deactivated by &layer_off 5 from
-             * device_layer's `9`/`0` keys (mac_mode_enable/mac_mode_disable).
-             * &trans everywhere except the 4 modifier positions below — never
-             * bind anything else on this layer, it stays active during normal
-             * typing and would shadow the base layer (see keymap header note
-             * and the plan's "Corrections from review" #1).
+            /* Toggled by &tog 5 from device_layer's `0` key. &trans everywhere
+             * except the 4 modifier positions below — never bind anything else
+             * on this layer, it stays active during normal typing and would
+             * shadow the base layer.
              *
              * Right `<>` (COL11) deliberately stays &trans (→ base LCTRL, i.e.
              * real Control) even in Mac mode: macOS genuinely needs a Control

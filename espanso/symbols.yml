@@ -1,0 +1,72 @@
+# Symbol expansions for the custom ZMK keyboard's sym_layer (⊃).
+#
+# This is the canonical source for the sym_layer trigger table — matches
+# keyboard.keymap's sym_* macros 1:1. If you add a symbol to one, add it to
+# the other.
+#
+# Install (see README.md "Espanso setup" for the full walkthrough):
+#   macOS   ~/Library/Application Support/espanso/match/symbols.yml
+#   Windows %APPDATA%\espanso\match\symbols.yml
+#   (or run: espanso path config   to confirm)
+# Then:  espanso restart
+#
+# Trigger scheme: ";;" prefix + mnemonic.
+# No trigger is a prefix of any other trigger — this is deliberate and must be
+# preserved if you add more. Espanso fires on exact match as soon as it sees one,
+# so if ";;in" existed alongside ";;inf", the shorter would always win and the
+# longer could never fire. (That's why ∈ is ";;isin" and not ";;in".)
+
+matches:
+
+  # ── Greek letters ────────────────────────────────────────────────
+  - {trigger: ";;alpha",  replace: "α"}   # U+03B1  A
+  - {trigger: ";;beta",   replace: "β"}   # U+03B2  B
+  - {trigger: ";;gamma",  replace: "γ"}   # U+03B3  G
+  - {trigger: ";;delta",  replace: "δ"}   # U+03B4  D
+  - {trigger: ";;eps",    replace: "ε"}   # U+03B5  E
+  - {trigger: ";;zeta",   replace: "ζ"}   # U+03B6  Z
+  - {trigger: ";;eta",    replace: "η"}   # U+03B7  N
+  - {trigger: ";;theta",  replace: "θ"}   # U+03B8  H
+  - {trigger: ";;iota",   replace: "ι"}   # U+03B9  I
+  - {trigger: ";;kappa",  replace: "κ"}   # U+03BA  K
+  - {trigger: ";;lambda", replace: "λ"}   # U+03BB  L
+  - {trigger: ";;mu",     replace: "μ"}   # U+03BC  U
+  - {trigger: ";;nu",     replace: "ν"}   # U+03BD  V
+  - {trigger: ";;pi",     replace: "π"}   # U+03C0  P
+  - {trigger: ";;rho",    replace: "ρ"}   # U+03C1  R
+  - {trigger: ";;sigma",  replace: "σ"}   # U+03C3  O
+  - {trigger: ";;tau",    replace: "τ"}   # U+03C4  T
+  - {trigger: ";;phi",    replace: "φ"}   # U+03C6  F
+  - {trigger: ";;chi",    replace: "χ"}   # U+03C7  X
+  - {trigger: ";;psi",    replace: "ψ"}   # U+03C8  Y
+  - {trigger: ";;omega",  replace: "ω"}   # U+03C9  W
+
+  # ── Number row: math / logic ─────────────────────────────────────
+  - {trigger: ";;pm",     replace: "±"}   # U+00B1  1
+  - {trigger: ";;sub",    replace: "⊆"}   # U+2286  2
+  - {trigger: ";;isin",   replace: "∈"}   # U+2208  3
+  - {trigger: ";;yen",    replace: "¥"}   # U+00A5  4
+  - {trigger: ";;pd",     replace: "∂"}   # U+2202  5
+  - {trigger: ";;int",    replace: "∫"}   # U+222B  6
+  - {trigger: ";;nabla",  replace: "∇"}   # U+2207  7
+  - {trigger: ";;inf",    replace: "∞"}   # U+221E  8
+  - {trigger: ";;sqrt",   replace: "√"}   # U+221A  9
+  - {trigger: ";;deg",    replace: "°"}   # U+00B0  0
+  - {trigger: ";;ne",     replace: "≠"}   # U+2260  -
+  - {trigger: ";;approx", replace: "≈"}   # U+2248  =
+
+  # ── Brackets & punctuation ───────────────────────────────────────
+  - {trigger: ";;fa",     replace: "∀"}   # U+2200  [
+  - {trigger: ";;te",     replace: "∃"}   # U+2203  ]
+  - {trigger: ";;perp",   replace: "⊥"}   # U+22A5  \
+  - {trigger: ";;tf",     replace: "∴"}   # U+2234  ;
+  - {trigger: ";;emd",    replace: "—"}   # U+2014  '
+  - {trigger: ";;le",     replace: "≤"}   # U+2264  ,
+  - {trigger: ";;ge",     replace: "≥"}   # U+2265  .
+  - {trigger: ";;irb",    replace: "‽"}   # U+203D  /
+
+  # ── Arrows ───────────────────────────────────────────────────────
+  - {trigger: ";;up",     replace: "↑"}   # U+2191  Up
+  - {trigger: ";;dn",     replace: "↓"}   # U+2193  Down
+  - {trigger: ";;lt",     replace: "←"}   # U+2190  Left
+  - {trigger: ";;rt",     replace: "→"}   # U+2192  Right
