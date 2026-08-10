@@ -1,0 +1,12 @@
+# Copyright (c) 2026 keyboard project
+# SPDX-License-Identifier: MIT
+
+description: >
+  Suppresses Shift (LSFT/RSFT) from the outgoing HID report between press
+  and release, without touching real key-press state. Used to wrap Espanso
+  trigger text inside a macro so it comes out unshifted even while Shift is
+  still physically held (see the uppercase-Greek sym_layer macros).
+
+compatible: "zmk,behavior-shift-mask"
+
+include: zero_param.yaml

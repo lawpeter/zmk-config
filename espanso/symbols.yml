@@ -100,3 +100,37 @@ matches:
   - {trigger: ";;dn",     replace: "↓"}   # U+2193  Down
   - {trigger: ";;lt",     replace: "←"}   # U+2190  Left
   - {trigger: ";;rt",     replace: "→"}   # U+2192  Right
+
+  # ── Shift variants (⊃ + Shift + key) — a second symbol per key, using
+  # the same ";;;" prefix convention as uppercase Greek. Mnemonic here is
+  # NOT related to the base key's mnemonic (these are different symbols,
+  # not case pairs) — e.g. ";;;iff" is the shift variant of the "pm" (±)
+  # key, not related to ";;pm" at all. See keyboard.keymap's "Shift
+  # variants for the remaining 24 symbols" comment for the base-key
+  # mapping. NOTE: → (rt) and ← (lt) were given as mapping to the SAME
+  # target (⇐) in the original request — implemented → as ⇒ instead
+  # (the natural counterpart to ← → ⇐), flag if that's wrong.
+  - {trigger: ";;;iff",    replace: "⇔"}   # U+21D4  Shift+1 (base: ±)
+  - {trigger: ";;;psub",   replace: "⊂"}   # U+2282  Shift+2 (base: ⊆)
+  - {trigger: ";;;nisin",  replace: "∉"}   # U+2209  Shift+3 (base: ∈)
+  - {trigger: ";;;eur",    replace: "€"}   # U+20AC  Shift+4 (base: ¥)
+  - {trigger: ";;;odot",   replace: "⨀"}   # U+2A00  Shift+5 (base: ∂)
+  - {trigger: ";;;cint",   replace: "∮"}   # U+222E  Shift+6 (base: ∫)
+  - {trigger: ";;;otimes", replace: "⊗"}   # U+2297  Shift+7 (base: ∇)
+  - {trigger: ";;;prop",   replace: "∝"}   # U+221D  Shift+8 (base: ∞)
+  - {trigger: ";;;check",  replace: "✓"}   # U+2713  Shift+9 (base: √)
+  - {trigger: ";;;empty",  replace: "∅"}   # U+2205  Shift+0 (base: °)
+  - {trigger: ";;;not",    replace: "¬"}   # U+00AC  Shift+- (base: ≠)
+  - {trigger: ";;;equiv",  replace: "≡"}   # U+2261  Shift+= (base: ≈)
+  - {trigger: ";;;and",    replace: "∧"}   # U+2227  Shift+[ (base: ∀)
+  - {trigger: ";;;or",     replace: "∨"}   # U+2228  Shift+] (base: ∃)
+  - {trigger: ";;;par",    replace: "∥"}   # U+2225  Shift+\ (base: ⊥)
+  - {trigger: ";;;endash", replace: "–"}   # U+2013  Shift+' (base: —)
+  - {trigger: ";;;bcs",    replace: "∵"}   # U+2235  Shift+; (base: ∴)
+  - {trigger: ";;;ll",     replace: "≪"}   # U+226A  Shift+, (base: ≤)
+  - {trigger: ";;;gg",     replace: "≫"}   # U+226B  Shift+. (base: ≥)
+  - {trigger: ";;;iq",     replace: "¿"}   # U+00BF  Shift+/ (base: ‽)
+  - {trigger: ";;;cap",    replace: "∩"}   # U+2229  Shift+Up (base: ↑)
+  - {trigger: ";;;imp",    replace: "⇒"}   # U+21D2  Shift+Right (base: →)
+  - {trigger: ";;;cup",    replace: "∪"}   # U+222A  Shift+Down (base: ↓)
+  - {trigger: ";;;bimp",   replace: "⇐"}   # U+21D0  Shift+Left (base: ←)

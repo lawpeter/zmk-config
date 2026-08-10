@@ -59,8 +59,9 @@ Standard QWERTY, with these keyboard-specific points:
   behavior: one press/release edge per physical press).
 - **Caps Word** — the key immediately right of the Up arrow (bottom-right cluster) is
   `&caps_word`, not Delete. See [Caps Word vs. Caps Lock](#caps-word-vs-caps-lock).
-- **Delete** lives on `f` + Backspace (see [Function layer](#function-layer-f)), not
-  on the base layer.
+- **Backspace / Delete** — the Backspace key is a mod-morph: plain tap is Backspace,
+  **Shift + tap is Delete**. (Also still reachable via `f` + Backspace, see
+  [Function layer](#function-layer-f) — either works.)
 - **Modifier row** (left to right): `<>` (Ctrl) · `⊞` (Win) · Alt · `⌘` (Ctrl, PC
   default) · Space · `✦` (Right Alt, unassigned/reserved — see
   [Known limitations](#known-limitations)) · Space · `⊃` · `f` · `<>` (Ctrl) · arrows.
@@ -107,41 +108,60 @@ holding `⊃`):
 
 `Q`, `S`, `C`, `J`, `M` are deliberately unmapped (`&trans`) — not a gap to fill in later.
 
-The uppercase trigger uses a 3-semicolon prefix (`;;;`) rather than relying on case —
-the firmware masks the physically-held Shift before typing the trigger text (via
-ZMK's mod-morph, same mechanism the base layer's Esc key uses for `` ` ``/`~`), so
-what actually gets typed is lowercase-shaped either way. Only the number of leading
-semicolons tells Espanso which glyph you mean.
+The uppercase/shift trigger uses a 3-semicolon prefix (`;;;`) rather than relying on
+case — the firmware masks Shift while typing the trigger text (a small custom
+behavior, `&shift_mask`), so what actually gets typed is lowercase-shaped either way;
+only the number of leading semicolons tells Espanso which glyph you mean. This
+masking is scoped to each symbol's own macro, not to how long you hold any physical
+key — so holding Shift down across several symbols in a row (the normal "hold shift,
+type multiple capitals" gesture) works exactly like typing multiple regular capital
+letters does.
 
-**Number row (math/logic):**
+**Number row (math/logic)** — every key also has a Shift variant, a second, unrelated
+symbol (not a case pair — see note below):
 
-| Key | Symbol | Trigger | Key | Symbol | Trigger |
-|---|---|---|---|---|---|
-| 1 | ± | `;;pm` | 7 | ∇ | `;;nabla` |
-| 2 | ⊆ | `;;sub` | 8 | ∞ | `;;inf` |
-| 3 | ∈ | `;;isin` | 9 | √ | `;;sqrt` |
-| 4 | ¥ | `;;yen` | 0 | ° | `;;deg` |
-| 5 | ∂ | `;;pd` | `-` | ≠ | `;;ne` |
-| 6 | ∫ | `;;int` | `=` | ≈ | `;;approx` |
+| Key | Base | Trigger | Shift | Trigger |
+|---|---|---|---|---|
+| 1 | ± | `;;pm` | ⇔ | `;;;iff` |
+| 2 | ⊆ | `;;sub` | ⊂ | `;;;psub` |
+| 3 | ∈ | `;;isin` | ∉ | `;;;nisin` |
+| 4 | ¥ | `;;yen` | € | `;;;eur` |
+| 5 | ∂ | `;;pd` | ⨀ | `;;;odot` |
+| 6 | ∫ | `;;int` | ∮ | `;;;cint` |
+| 7 | ∇ | `;;nabla` | ⊗ | `;;;otimes` |
+| 8 | ∞ | `;;inf` | ∝ | `;;;prop` |
+| 9 | √ | `;;sqrt` | ✓ | `;;;check` |
+| 0 | ° | `;;deg` | ∅ | `;;;empty` |
+| `-` | ≠ | `;;ne` | ¬ | `;;;not` |
+| `=` | ≈ | `;;approx` | ≡ | `;;;equiv` |
 
-**Punctuation:**
+**Punctuation** — same pattern:
 
-| Key | Symbol | Trigger | Key | Symbol | Trigger |
-|---|---|---|---|---|---|
-| `[` | ∀ | `;;fa` | `,` | ≤ | `;;le` |
-| `]` | ∃ | `;;te` | `.` | ≥ | `;;ge` |
-| `\` | ⊥ | `;;perp` | `/` | ‽ (interrobang) | `;;irb` |
-| `;` | ∴ | `;;tf` | Esc | ~ | *(plain `&kp LS(GRAVE)`, not a trigger)* |
-| `'` | — (em dash) | `;;emd` | | | |
+| Key | Base | Trigger | Shift | Trigger |
+|---|---|---|---|---|
+| `[` | ∀ | `;;fa` | ∧ | `;;;and` |
+| `]` | ∃ | `;;te` | ∨ | `;;;or` |
+| `\` | ⊥ | `;;perp` | ∥ | `;;;par` |
+| `;` | ∴ | `;;tf` | ∵ | `;;;bcs` |
+| `'` | — (em dash) | `;;emd` | – (en dash) | `;;;endash` |
+| `,` | ≤ | `;;le` | ≪ | `;;;ll` |
+| `.` | ≥ | `;;ge` | ≫ | `;;;gg` |
+| `/` | ‽ (interrobang) | `;;irb` | ¿ | `;;;iq` |
+| Esc | ~ | *(plain `&kp LS(GRAVE)`, not a trigger — no Shift variant)* | | |
 
 **Arrows** (literal glyphs, not navigation — navigation stays on the base layer):
 
-| Key | Symbol | Trigger |
-|---|---|---|
-| Up | ↑ | `;;up` |
-| Down | ↓ | `;;dn` |
-| Left | ← | `;;lt` |
-| Right | → | `;;rt` |
+| Key | Base | Trigger | Shift | Trigger |
+|---|---|---|---|---|
+| Up | ↑ | `;;up` | ∩ | `;;;cap` |
+| Down | ↓ | `;;dn` | ∪ | `;;;cup` |
+| Left | ← | `;;lt` | ⇐ | `;;;bimp` |
+| Right | → | `;;rt` | ⇒ | `;;;imp` |
+
+All 24 non-Greek keys work the same way as uppercase Greek: hold `⊃` + Shift, and the
+firmware masks Shift while typing a distinct `;;;`-prefixed trigger, so it's safe to
+hold Shift across several symbols in a row (not just tap it briefly) — see the note
+below.
 
 The canonical, always-up-to-date trigger table (with codepoints) is
 [`espanso/symbols.yml`](espanso/symbols.yml) — copy it into your Espanso config rather

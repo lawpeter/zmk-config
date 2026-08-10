@@ -51,3 +51,9 @@ zephyr_library_sources(behaviors/behavior_disp_cycle.c)
 # The ZMK_LISTENER/ZMK_SUBSCRIPTION for keycode counting is always compiled in
 # but is a no-op while tt.active == false (i.e. at boot and when no test runs).
 zephyr_library_sources(behaviors/behavior_typing_test.c)
+
+# shift_mask behavior — guarded internally by DT_HAS_COMPAT_STATUS_OKAY.
+# Wraps zmk_hid_masked_modifiers_set/clear for use inside macros (uppercase
+# Greek sym_layer triggers need Shift suppressed for their own duration,
+# independent of how long the physical Shift/letter keys are held).
+zephyr_library_sources(behaviors/behavior_shift_mask.c)
