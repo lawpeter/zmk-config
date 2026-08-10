@@ -15,6 +15,13 @@
 # preserved if you add more. Espanso fires on exact match as soon as it sees one,
 # so if ";;in" existed alongside ";;inf", the shorter would always win and the
 # longer could never fire. (That's why ∈ is ";;isin" and not ";;in".)
+#
+# Uppercase Greek (⊃ + Shift + letter) use a ";;;" (3-semicolon) prefix
+# instead of relying on case — the firmware masks the physically-held Shift
+# before typing these, so the actual keystrokes sent are lowercase-shaped
+# either way. ";;;" can't collide with any ";;"-prefixed trigger (they
+# diverge at the 3rd character for every pair) or with each other (same
+# non-prefix property as the lowercase set, since it's the same words).
 
 matches:
 
@@ -40,6 +47,29 @@ matches:
   - {trigger: ";;chi",    replace: "χ"}   # U+03C7  X
   - {trigger: ";;psi",    replace: "ψ"}   # U+03C8  Y
   - {trigger: ";;omega",  replace: "ω"}   # U+03C9  W
+
+  # ── Uppercase Greek (⊃ + Shift + letter) ──────────────────────────
+  - {trigger: ";;;alpha",  replace: "Α"}   # U+0391  Shift+A
+  - {trigger: ";;;beta",   replace: "Β"}   # U+0392  Shift+B
+  - {trigger: ";;;gamma",  replace: "Γ"}   # U+0393  Shift+G
+  - {trigger: ";;;delta",  replace: "Δ"}   # U+0394  Shift+D
+  - {trigger: ";;;eps",    replace: "Ε"}   # U+0395  Shift+E
+  - {trigger: ";;;zeta",   replace: "Ζ"}   # U+0396  Shift+Z
+  - {trigger: ";;;eta",    replace: "Η"}   # U+0397  Shift+N
+  - {trigger: ";;;theta",  replace: "Θ"}   # U+0398  Shift+H
+  - {trigger: ";;;iota",   replace: "Ι"}   # U+0399  Shift+I
+  - {trigger: ";;;kappa",  replace: "Κ"}   # U+039A  Shift+K
+  - {trigger: ";;;lambda", replace: "Λ"}   # U+039B  Shift+L
+  - {trigger: ";;;mu",     replace: "Μ"}   # U+039C  Shift+U
+  - {trigger: ";;;nu",     replace: "Ν"}   # U+039D  Shift+V
+  - {trigger: ";;;pi",     replace: "Π"}   # U+03A0  Shift+P
+  - {trigger: ";;;rho",    replace: "Ρ"}   # U+03A1  Shift+R
+  - {trigger: ";;;sigma",  replace: "Σ"}   # U+03A3  Shift+O
+  - {trigger: ";;;tau",    replace: "Τ"}   # U+03A4  Shift+T
+  - {trigger: ";;;phi",    replace: "Φ"}   # U+03A6  Shift+F
+  - {trigger: ";;;chi",    replace: "Χ"}   # U+03A7  Shift+X
+  - {trigger: ";;;psi",    replace: "Ψ"}   # U+03A8  Shift+Y
+  - {trigger: ";;;omega",  replace: "Ω"}   # U+03A9  Shift+W
 
   # ── Number row: math / logic ─────────────────────────────────────
   - {trigger: ";;pm",     replace: "±"}   # U+00B1  1

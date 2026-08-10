@@ -63,10 +63,26 @@
 
 / {
     behaviors {
-        /* Sensor-rotate behavior using &msc (mouse scroll) for the fn_layer. */
+        /* Sensor-rotate behavior using &msc (mouse scroll) for the fn_layer.
+         *
+         * tap-ms=32 is required, not cosmetic — traced this via source, not
+         * guessing: sensor-rotate-common queues each detent as press-then-
+         * release exactly tap_ms apart (behavior_sensor_rotate_common.c).
+         * &msc (zmk,behavior-input-two-axis) only emits a HID report from a
+         * periodic k_work timer that fires every trigger-period-ms (stock
+         * default 16ms, set in mouse_scroll.dtsi, not overridden here) WHILE
+         * "pressed"; on release it's cancelled outright
+         * (update_work_scheduling() -> k_work_cancel_delayable). The
+         * built-in tap-ms default for this behavior type is 5ms — shorter
+         * than the 16ms tick period — so every single detent's release fired
+         * before the first tick ever had a chance to run, meaning ZERO scroll
+         * reports were ever sent, confirmed as the cause of "nothing happens
+         * at all" when testing f+encoder. 32ms (2 ticks/detent) fixes it;
+         * raise further if scrolling still feels too light per click. */
         inc_dec_msc: inc_dec_msc {
             compatible = "zmk,behavior-sensor-rotate-var";
             #sensor-binding-cells = <2>;
+            tap-ms = <32>;
             bindings = <&msc>, <&msc>;
         };
 
@@ -168,6 +184,193 @@
                   bindings = <&kp SEMI &kp SEMI &kp P &kp S &kp I>;)
         ZMK_MACRO(sym_omega, wait-ms = <5>; tap-ms = <5>;
                   bindings = <&kp SEMI &kp SEMI &kp O &kp M &kp E &kp G &kp A>;)
+
+        /* ── Uppercase Greek: ⊃ + Shift + letter ──────────────────────
+         * Each Greek key position (in sym_layer, below) is wrapped in a
+         * mod-morph that picks between the lowercase macro above and one
+         * of these "_upper" macros when Shift is held. mod-morph's masked
+         * modifiers mechanism (zmk_hid_masked_modifiers_set, see
+         * behavior_mod_morph.c) suppresses the physically-held Shift from
+         * the outgoing HID report for the duration of the morph binding —
+         * so these macros' &kp letter taps come out genuinely unshifted
+         * (lowercase-shaped) even though Shift is still physically down.
+         * That's WHY they need their own distinct trigger text rather than
+         * relying on case: the actual keystrokes sent are identical case
+         * to the lowercase trigger, only the ";;;" (3 semicolons, vs. 2
+         * for lowercase) prefix distinguishes them. Verified: no 2-semi
+         * trigger is a prefix of a 3-semi one (they diverge at the 3rd
+         * character - ';' vs a letter - for every pair), and no 3-semi
+         * trigger is a prefix of another for the same reason the lowercase
+         * set already isn't (see espanso/symbols.yml). */
+        ZMK_MACRO(sym_alpha_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp A &kp L &kp P &kp H &kp A>;)
+        ZMK_MACRO(sym_beta_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp B &kp E &kp T &kp A>;)
+        ZMK_MACRO(sym_gamma_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp G &kp A &kp M &kp M &kp A>;)
+        ZMK_MACRO(sym_delta_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp D &kp E &kp L &kp T &kp A>;)
+        ZMK_MACRO(sym_eps_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp E &kp P &kp S>;)
+        ZMK_MACRO(sym_zeta_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp Z &kp E &kp T &kp A>;)
+        ZMK_MACRO(sym_eta_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp E &kp T &kp A>;)
+        ZMK_MACRO(sym_theta_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp T &kp H &kp E &kp T &kp A>;)
+        ZMK_MACRO(sym_iota_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp I &kp O &kp T &kp A>;)
+        ZMK_MACRO(sym_kappa_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp K &kp A &kp P &kp P &kp A>;)
+        ZMK_MACRO(sym_lambda_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp L &kp A &kp M &kp B &kp D &kp A>;)
+        ZMK_MACRO(sym_mu_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp M &kp U>;)
+        ZMK_MACRO(sym_nu_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp N &kp U>;)
+        ZMK_MACRO(sym_pi_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp P &kp I>;)
+        ZMK_MACRO(sym_rho_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp R &kp H &kp O>;)
+        ZMK_MACRO(sym_sigma_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp S &kp I &kp G &kp M &kp A>;)
+        ZMK_MACRO(sym_tau_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp T &kp A &kp U>;)
+        ZMK_MACRO(sym_phi_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp P &kp H &kp I>;)
+        ZMK_MACRO(sym_chi_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp C &kp H &kp I>;)
+        ZMK_MACRO(sym_psi_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp P &kp S &kp I>;)
+        ZMK_MACRO(sym_omega_upper, wait-ms = <5>; tap-ms = <5>;
+                  bindings = <&kp SEMI &kp SEMI &kp SEMI &kp O &kp M &kp E &kp G &kp A>;)
+
+        sym_alpha_morph: sym_alpha_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_alpha>, <&sym_alpha_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_beta_morph: sym_beta_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_beta>, <&sym_beta_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_gamma_morph: sym_gamma_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_gamma>, <&sym_gamma_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_delta_morph: sym_delta_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_delta>, <&sym_delta_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_eps_morph: sym_eps_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_eps>, <&sym_eps_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_zeta_morph: sym_zeta_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_zeta>, <&sym_zeta_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_eta_morph: sym_eta_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_eta>, <&sym_eta_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_theta_morph: sym_theta_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_theta>, <&sym_theta_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_iota_morph: sym_iota_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_iota>, <&sym_iota_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_kappa_morph: sym_kappa_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_kappa>, <&sym_kappa_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_lambda_morph: sym_lambda_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_lambda>, <&sym_lambda_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_mu_morph: sym_mu_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_mu>, <&sym_mu_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_nu_morph: sym_nu_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_nu>, <&sym_nu_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_pi_morph: sym_pi_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_pi>, <&sym_pi_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_rho_morph: sym_rho_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_rho>, <&sym_rho_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_sigma_morph: sym_sigma_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_sigma>, <&sym_sigma_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_tau_morph: sym_tau_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_tau>, <&sym_tau_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_phi_morph: sym_phi_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_phi>, <&sym_phi_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_chi_morph: sym_chi_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_chi>, <&sym_chi_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_psi_morph: sym_psi_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_psi>, <&sym_psi_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
+        sym_omega_morph: sym_omega_morph {
+            compatible = "zmk,behavior-mod-morph";
+            #binding-cells = <0>;
+            bindings = <&sym_omega>, <&sym_omega_upper>;
+            mods = <(MOD_LSFT|MOD_RSFT)>;
+        };
 
         /* ── Number row: math / logic ──────────────────────────────── */
         ZMK_MACRO(sym_pm, wait-ms = <5>; tap-ms = <5>;
@@ -312,12 +515,14 @@
             bindings = <
 /* Row 0 — Esc→~; number row math/logic */
 &kp LS(GRAVE) &sym_pm &sym_sub &sym_isin &sym_yen &sym_pd &sym_int &sym_nabla &sym_inf &sym_sqrt &sym_deg &sym_ne &sym_approx &trans
-/* Row 1 — Greek W-P + brackets/backslash. Q unmapped (deliberate). */
-&trans  &trans  &sym_omega  &sym_eps  &sym_rho  &sym_tau  &sym_psi  &sym_mu  &sym_iota  &sym_sigma  &sym_pi  &sym_fa  &sym_te  &sym_perp
+/* Row 1 — Greek W-P + brackets/backslash. Q unmapped (deliberate).
+ * Greek letters use the _morph variant — plain tap = lowercase,
+ * Shift+tap = uppercase (see behaviors block "Uppercase Greek"). */
+&trans  &trans  &sym_omega_morph  &sym_eps_morph  &sym_rho_morph  &sym_tau_morph  &sym_psi_morph  &sym_mu_morph  &sym_iota_morph  &sym_sigma_morph  &sym_pi_morph  &sym_fa  &sym_te  &sym_perp
 /* Row 2 — Greek A,D,F,G,H,K,L + ∴/— ; S,J unmapped (deliberate). */
-&trans  &sym_alpha  &trans  &sym_delta  &sym_phi  &sym_gamma  &sym_theta  &trans  &sym_kappa  &sym_lambda  &sym_tf  &sym_emd  &trans
+&trans  &sym_alpha_morph  &trans  &sym_delta_morph  &sym_phi_morph  &sym_gamma_morph  &sym_theta_morph  &trans  &sym_kappa_morph  &sym_lambda_morph  &sym_tf  &sym_emd  &trans
 /* Row 3 — Greek Z,X,V,B,N + ≤/≥/‽/↑ ; C,M unmapped (deliberate). */
-&trans  &sym_zeta  &sym_chi  &trans  &sym_nu  &sym_beta  &sym_eta  &trans  &sym_le  &sym_ge  &sym_irb  &trans  &sym_up  &trans
+&trans  &sym_zeta_morph  &sym_chi_morph  &trans  &sym_nu_morph  &sym_beta_morph  &sym_eta_morph  &trans  &sym_le  &sym_ge  &sym_irb  &trans  &sym_up  &trans
 /* Row 4 — arrows. Mod positions stay &trans. */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &sym_lt  &sym_dn  &sym_rt
 /* Row 5 — encoder push: play/pause */

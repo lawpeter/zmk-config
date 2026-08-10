@@ -87,21 +87,31 @@ logic at all. **You must install and configure Espanso for symbols to work at al
 All 45 symbols below are wired up and confirmed working on real hardware (macOS and
 Windows, both via Espanso).
 
-**Greek letters:**
+**Greek letters** — plain tap = lowercase, **Shift + tap = uppercase** (still while
+holding `⊃`):
 
-| Key | Symbol | Trigger | Key | Symbol | Trigger | Key | Symbol | Trigger |
-|---|---|---|---|---|---|---|---|---|
-| W | ω | `;;omega` | A | α | `;;alpha` | Z | ζ | `;;zeta` |
-| E | ε | `;;eps` | D | δ | `;;delta` | X | χ | `;;chi` |
-| R | ρ | `;;rho` | F | φ | `;;phi` | V | ν | `;;nu` |
-| T | τ | `;;tau` | G | γ | `;;gamma` | B | β | `;;beta` |
-| Y | ψ | `;;psi` | H | θ | `;;theta` | N | η | `;;eta` |
-| U | μ | `;;mu` | K | κ | `;;kappa` | | | |
-| I | ι | `;;iota` | L | λ | `;;lambda` | | | |
-| O | σ | `;;sigma` | | | | | | |
-| P | π | `;;pi` | | | | | | |
+| Key | Lower | Trigger | Upper | Trigger | Key | Lower | Trigger | Upper | Trigger |
+|---|---|---|---|---|---|---|---|---|---|
+| W | ω | `;;omega` | Ω | `;;;omega` | Z | ζ | `;;zeta` | Ζ | `;;;zeta` |
+| E | ε | `;;eps` | Ε | `;;;eps` | X | χ | `;;chi` | Χ | `;;;chi` |
+| R | ρ | `;;rho` | Ρ | `;;;rho` | V | ν | `;;nu` | Ν | `;;;nu` |
+| T | τ | `;;tau` | Τ | `;;;tau` | B | β | `;;beta` | Β | `;;;beta` |
+| Y | ψ | `;;psi` | Ψ | `;;;psi` | N | η | `;;eta` | Η | `;;;eta` |
+| U | μ | `;;mu` | Μ | `;;;mu` | A | α | `;;alpha` | Α | `;;;alpha` |
+| I | ι | `;;iota` | Ι | `;;;iota` | D | δ | `;;delta` | Δ | `;;;delta` |
+| O | σ | `;;sigma` | Σ | `;;;sigma` | F | φ | `;;phi` | Φ | `;;;phi` |
+| P | π | `;;pi` | Π | `;;;pi` | G | γ | `;;gamma` | Γ | `;;;gamma` |
+| | | | | | H | θ | `;;theta` | Θ | `;;;theta` |
+| | | | | | K | κ | `;;kappa` | Κ | `;;;kappa` |
+| | | | | | L | λ | `;;lambda` | Λ | `;;;lambda` |
 
 `Q`, `S`, `C`, `J`, `M` are deliberately unmapped (`&trans`) — not a gap to fill in later.
+
+The uppercase trigger uses a 3-semicolon prefix (`;;;`) rather than relying on case —
+the firmware masks the physically-held Shift before typing the trigger text (via
+ZMK's mod-morph, same mechanism the base layer's Esc key uses for `` ` ``/`~`), so
+what actually gets typed is lowercase-shaped either way. Only the number of leading
+semicolons tells Espanso which glyph you mean.
 
 **Number row (math/logic):**
 
