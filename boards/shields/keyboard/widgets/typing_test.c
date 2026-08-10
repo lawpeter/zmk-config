@@ -5,10 +5,20 @@
  * content appears portrait-correct on the physical display.
  * Canvas is centred horizontally in the 160×68 LVGL space (x-offset 46).
  *
+ * REVISION: the original results layout packed "WPM:%u CPM:%u" and
+ * "%us  %u keys" onto two lines at 14pt (lv_font_montserrat_14) — each of
+ * those strings is well over what fits in a 68px-wide canvas at that font,
+ * so results were unreadable/clipped. Fixed by giving each of the 4 stats
+ * its own line at the much narrower lv_font_unscii_8 (already used
+ * elsewhere on this display — see status.c's WPM/battery labels), and
+ * shortening the phase header labels so even they can't overflow.
+ *
  * Canvas layout (pre-rotation coordinates):
- *   y= 2: status line  ("TYPING TEST" / "IN PROGRESS" / "RESULTS")
- *   y=20: detail line 1
- *   y=38: detail line 2 (results only)
+ *   y= 2: phase header (montserrat_14 — kept short enough to always fit:
+ *         "READY" / "TYPING" / "DONE")
+ *   y=22 (idle/running): single detail line, unscii_8
+ *   y=18,30,42,54 (results only): one stat per line, unscii_8 —
+ *         WPM, CPM, elapsed time, key count
  */
 
 #include <zephyr/kernel.h>
@@ -38,7 +48,8 @@ static sys_slist_t widgets;
 static void draw_tt_canvas(struct zmk_widget_typing_test *widget,
                             struct tt_display_state state) {
     lv_draw_rect_dsc_t  rect_bg;
-    lv_draw_label_dsc_t lbl;
+    lv_draw_label_dsc_t lbl;       /* phase header, montserrat_14 */
+    lv_draw_label_dsc_t lbl_small; /* detail/stat lines, unscii_8 */
 
     lv_draw_rect_dsc_init(&rect_bg);
     rect_bg.bg_color = LVGL_BACKGROUND;
@@ -48,29 +59,41 @@ static void draw_tt_canvas(struct zmk_widget_typing_test *widget,
     lbl.font  = &lv_font_montserrat_14;
     lbl.align = LV_TEXT_ALIGN_CENTER;
 
+    lv_draw_label_dsc_init(&lbl_small);
+    lbl_small.color = LVGL_FOREGROUND;
+    lbl_small.font  = &lv_font_unscii_8;
+    lbl_small.align = LV_TEXT_ALIGN_CENTER;
+
     /* Clear background */
     lv_canvas_draw_rect(widget->canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_bg);
 
-    char detail1[24] = {};
-    char detail2[24] = {};
+    char line[24] = {};
 
     switch (state.phase) {
     case ZMK_TYPING_TEST_IDLE:
-        lv_canvas_draw_text(widget->canvas, 0, 2, CANVAS_SIZE, &lbl, "TYPING TEST");
-        lv_canvas_draw_text(widget->canvas, 0, 24, CANVAS_SIZE, &lbl, "FN+T to start");
+        lv_canvas_draw_text(widget->canvas, 0, 2, CANVAS_SIZE, &lbl, "READY");
+        lv_canvas_draw_text(widget->canvas, 0, 24, CANVAS_SIZE, &lbl_small, "HOLD FN+T");
         break;
 
     case ZMK_TYPING_TEST_RUNNING:
-        lv_canvas_draw_text(widget->canvas, 0, 2, CANVAS_SIZE, &lbl, "IN PROGRESS");
-        lv_canvas_draw_text(widget->canvas, 0, 28, CANVAS_SIZE, &lbl, "Type now...");
+        lv_canvas_draw_text(widget->canvas, 0, 2, CANVAS_SIZE, &lbl, "TYPING");
+        lv_canvas_draw_text(widget->canvas, 0, 24, CANVAS_SIZE, &lbl_small, "TYPE NOW");
         break;
 
     case ZMK_TYPING_TEST_DONE:
-        lv_canvas_draw_text(widget->canvas, 0, 2, CANVAS_SIZE, &lbl, "RESULTS");
-        snprintf(detail1, sizeof(detail1), "WPM:%u CPM:%u", state.wpm, state.cpm);
-        snprintf(detail2, sizeof(detail2), "%us  %u keys", state.elapsed_s, state.key_count);
-        lv_canvas_draw_text(widget->canvas, 0, 20, CANVAS_SIZE, &lbl, detail1);
-        lv_canvas_draw_text(widget->canvas, 0, 44, CANVAS_SIZE, &lbl, detail2);
+        lv_canvas_draw_text(widget->canvas, 0, 2, CANVAS_SIZE, &lbl, "DONE");
+
+        snprintf(line, sizeof(line), "WPM %u", state.wpm);
+        lv_canvas_draw_text(widget->canvas, 0, 18, CANVAS_SIZE, &lbl_small, line);
+
+        snprintf(line, sizeof(line), "CPM %u", state.cpm);
+        lv_canvas_draw_text(widget->canvas, 0, 30, CANVAS_SIZE, &lbl_small, line);
+
+        snprintf(line, sizeof(line), "TIME %us", state.elapsed_s);
+        lv_canvas_draw_text(widget->canvas, 0, 42, CANVAS_SIZE, &lbl_small, line);
+
+        snprintf(line, sizeof(line), "KEYS %u", state.key_count);
+        lv_canvas_draw_text(widget->canvas, 0, 54, CANVAS_SIZE, &lbl_small, line);
         break;
     }
 

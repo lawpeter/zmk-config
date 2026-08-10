@@ -14,7 +14,7 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 - [Function layer (f)](#function-layer-f)
 - [Device layer (⊃ + f)](#device-layer--f)
 - [Esc key — 4-way behavior](#esc-key--4-way-behavior)
-- [Esc-hold brightness/sleep layer](#esc-hold-brightnesssleep-layer)
+- [Esc-hold brightness/lock layer](#esc-hold-brightnesslock-layer)
 - [Mac / PC mode switch](#mac--pc-mode-switch)
 - [Caps Word vs. Caps Lock](#caps-word-vs-caps-lock)
 - [Rotary encoder — full behavior table](#rotary-encoder--full-behavior-table)
@@ -40,7 +40,8 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 | 3 | `device_layer` | hold `⊃` **and** `f` together (conditional layer — neither key alone triggers it) |
 | 4 | `esc_layer` | hold `Esc` |
 | 5 | `mac_mods` | toggled on/off from the device layer (`0`) — see [Mac / PC mode switch](#mac--pc-mode-switch) |
-| 6-8 | `extra1`–`extra3` | reserved, empty — for ad-hoc ZMK Studio customization only |
+| 6 | `mac_lock_layer` | conditional — active only while `esc_layer`(4) **and** `mac_mods`(5) are both active (holding `Esc` while already in Mac mode); overrides just the lock shortcut, see [Esc-hold layer](#esc-hold-brightnesslock-layer) |
+| 7-9 | `extra1`–`extra3` | reserved, empty — for ad-hoc ZMK Studio customization only |
 
 Layers 1, 2, and 4 are momentary (active only while held). Layer 3 requires both
 `⊃` and `f` held simultaneously. Layer 5 is a persistent on/off state that survives
@@ -223,21 +224,27 @@ The top-left key (labeled `Esc`/`` ` ``) is a hold-tap, not a plain key:
 | Tap | `Esc` |
 | Shift + tap | `` ` `` (backtick) |
 | `⊃` held + tap | `~` (tilde — lives on the [symbol layer](#symbol-layer-⊃)) |
-| **Hold** | Activates the [brightness/sleep layer](#esc-hold-brightnesssleep-layer) |
+| **Hold** | Activates the [brightness/lock layer](#esc-hold-brightnesslock-layer) |
 
 A quick tap always produces `Esc` — the hold threshold (200 ms) is tuned so normal
 typing never accidentally triggers the hold behavior.
 
-## Esc-hold brightness/sleep layer
+## Esc-hold brightness/lock layer
 
-Hold `Esc` (don't tap) to reach display brightness and sleep on the encoder — every
-regular key is inert on this layer.
+Hold `Esc` (don't tap) to reach display brightness and screen lock on the encoder —
+every regular key is inert on this layer.
 
 | Encoder action | Result |
 |---|---|
 | Rotate CW | Brightness up |
 | Rotate CCW | Brightness down |
-| Push | Put the host system to sleep |
+| Push | **Lock the screen** — `Win+L` in PC mode, `Ctrl+Cmd+Q` in Mac mode (see
+[Mac / PC mode switch](#mac--pc-mode-switch); this is the one place the Mac/PC
+setting affects something outside the modifier row itself) |
+
+Both are each OS's own default shortcut, not something this firmware invents — if
+you've customized or disabled either shortcut in your OS settings, this won't work
+until you restore it (or update the codepoint here to match your custom one).
 
 See [Known limitations](#known-limitations) — brightness control is unreliable on
 Windows for external keyboards; this is a host-OS limitation, not a firmware bug.
@@ -305,7 +312,7 @@ The encoder's rotation and push behavior depends on which layer (if any) is held
 | `⊃` held | Next track | Previous track | Play/Pause |
 | `f` held | Scroll down | Scroll up | Middle-click |
 | `⊃` + `f` held (device layer) | *(falls through to `f`'s scroll — see [device layer](#device-layer--f))* | | No-op |
-| `Esc` held | Brightness up | Brightness down | Sleep |
+| `Esc` held | Brightness up | Brightness down | Lock screen (`Win+L` PC / `Ctrl+Cmd+Q` Mac) |
 
 ---
 
@@ -314,8 +321,10 @@ The encoder's rotation and push behavior depends on which layer (if any) is held
 Press the encoder (on the base layer, nothing else held) to cycle through display
 modes; long-press to jump back to mode 1.
 
-1. **Status** — layer name, BLE status, battery %, USB/BLE output
-2. **WPM** — live words-per-minute counter
+1. **Status** — layer name, BLE status, battery %, USB/BLE output, plus a rolling
+   CPM (characters-per-minute) graph and current value
+2. **WPM** — live words-per-minute counter (a separate, dedicated screen — unrelated
+   to mode 1's CPM graph)
 3. **Battery** — large battery percentage + charge bar
 4. **Volume** — ⚠️ static placeholder only (ZMK has no volume state to read; see
    [Known limitations](#known-limitations))
@@ -349,22 +358,23 @@ activation during normal typing is essentially impossible):
 
 Press `f` + `T` to start a typing test; press it again to stop and see results.
 Switch the display to mode 5 (see [Display](#display--7-modes)) to watch it live or
-review the result.
+review the result. Screen reads, top to bottom: `READY`/`TYPING`/`DONE` (phase),
+then once done, one stat per line — `WPM`, `CPM`, `TIME`, `KEYS`.
 
 ---
 
 ## ZMK Studio
 
-Studio is unlocked via `f` + Right Shift. Layers 6–8 (`extra1`–`extra3`) are reserved
+Studio is unlocked via `f` + Right Shift. Layers 7–9 (`extra1`–`extra3`) are reserved
 empty layers meant for ad-hoc Studio customization without needing a firmware
 rebuild — everything else in this document is defined in the firmware itself and
 Studio changes to those layers won't persist across a reflash.
 
-> If you're flashing after the layer-restructure commit that introduced the device
-> layer, Esc layer, and Mac/PC mode layer: those three new layers pushed
-> `extra1`–`extra3` from indices 3–5 to 6–8. Any Studio customization made before
-> that change is keyed to the old indices — run **Restore Stock Settings** in Studio
-> after flashing, then re-customize.
+> If you're flashing after a layer-count change (the original restructure that added
+> device/Esc/Mac-mode layers, or the later addition of `mac_lock_layer`):
+> `extra1`–`extra3`'s indices shift every time. Any Studio customization made before
+> such a change is keyed to the old indices — run **Restore Stock Settings** in
+> Studio after flashing, then re-customize.
 
 ---
 
@@ -401,7 +411,7 @@ local Zephyr toolchain is required or expected for normal use of this repo.
 
 ## Known limitations
 
-- **Windows brightness control is unreliable.** The [Esc-hold layer](#esc-hold-brightnesssleep-layer)
+- **Windows brightness control is unreliable.** The [Esc-hold layer](#esc-hold-brightnesslock-layer)
   sends standard HID Consumer-page brightness commands, which macOS handles well but
   Windows frequently ignores for *external* keyboards (as opposed to a laptop's
   built-in keyboard). This is a Windows/host-OS limitation, not something the

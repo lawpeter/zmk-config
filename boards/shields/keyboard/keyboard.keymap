@@ -9,15 +9,17 @@
  *   1  sym_layer     — pure symbol layer (Espanso triggers)  (hold ⊃/COL9, &mo 1)
  *   2  fn_layer      — F-keys, navigation, studio/typing    (hold f/COL10, &mo 2)
  *   3  device_layer   — BT management + Mac/PC mode switch  (conditional: ⊃+f held)
- *   4  esc_layer      — brightness/sleep                    (hold Esc)
+ *   4  esc_layer      — brightness/lock                     (hold Esc)
  *   5  mac_mods       — Mac-mode modifier overrides          (&tog 5, from
  *                        device_layer's `0` key)
- *   6-8 extra1-3      — reserved for ZMK Studio expansion
+ *   6  mac_lock_layer — Mac-specific lock shortcut override  (conditional:
+ *                        esc_layer(4) + mac_mods(5) both active)
+ *   7-9 extra1-3      — reserved for ZMK Studio expansion
  *
- * NOTE: extra1-3 shifted from indices 3-5 to 6-8 in this revision (device_layer,
- * esc_layer, mac_mods were inserted before them). Any existing ZMK Studio
- * customizations on this board are keyed to the OLD indices — run "Restore Stock
- * Settings" in Studio after flashing before re-customizing.
+ * NOTE: extra1-3 shifted from indices 3-5 to 7-9 in this revision (device_layer,
+ * esc_layer, mac_mods, mac_lock_layer were inserted before them). Any existing
+ * ZMK Studio customizations on this board are keyed to the OLD indices — run
+ * "Restore Stock Settings" in Studio after flashing before re-customizing.
  *
  * Symbols are NOT Unicode-macro'd by the firmware (REVISED — see git history:
  * the original urob/zmk-unicode approach needed macOS's Unicode Hex Input to be
@@ -38,13 +40,14 @@
  *   device (⊃+f) — no sensor-bindings; rotation falls through to fn_layer's
  *                  scroll (harmless — same fallthrough philosophy as device_layer's
  *                  &trans key positions). push=&none
- *   esc (hold)   CW=brightness up  CCW=brightness down  push=sleep
+ *   esc (hold)   CW=brightness up  CCW=brightness down  push=lock screen
+ *                (Win+L on PC; Ctrl+Cmd+Q on Mac — see mac_lock_layer)
  *
  * Esc key (base position 0, was &kp GRAVE):
  *   tap            → ESC
  *   shift+tap      → ` (GRAVE, via mod-morph)
  *   ⊃ held+tap     → ~ (LS(GRAVE), lives on sym_layer, not this behavior)
- *   hold           → esc_layer (brightness/sleep)
+ *   hold           → esc_layer (brightness/lock)
  *
  * Row3/COL14 (was &kp DEL) → &caps_word. Delete lives on fn_layer + Backspace.
  * combo_sys_reset still targets key position 54 (now the Caps Word key) — combos
@@ -216,27 +219,25 @@
         ZMK_MACRO(sym_lt, wait-ms = <5>; tap-ms = <5>;
                   bindings = <&kp SEMI &kp SEMI &kp L &kp T>;)
 
-        /* macOS's Consumer-page "Sleep" HID usage needs to be HELD, not
-         * tapped — a quick &kp press/release (whatever the physical encoder
-         * push happens to last) isn't enough for macOS to show the sleep
-         * confirmation; Windows/Linux act immediately but macOS specifically
-         * needs a sustained hold before it engages (same family of quirk as
-         * the physical power button needing a ~1.5s hold, not a tap). Fixed
-         * by wrapping &kp C_SLEEP in a macro that holds it for 1500ms
-         * (tap-ms) regardless of how briefly the encoder is actually
-         * pressed. 1500ms is a starting guess, not a verified minimum —
-         * raise it if the sleep dialog still doesn't appear in testing. */
-        ZMK_MACRO(mac_sleep, wait-ms = <0>; tap-ms = <1500>;
-                  bindings = <&kp C_SLEEP>;)
     };
 
     /* Device layer (index 3) activates only while sym_layer (1) AND fn_layer (2)
-     * are both held — i.e. ⊃+f together, neither alone. */
+     * are both held — i.e. ⊃+f together, neither alone.
+     *
+     * mac_lock_layer (index 6) activates only while esc_layer (4) AND
+     * mac_mods (5) are both active — i.e. holding Esc while already toggled
+     * into Mac mode. See esc_layer's and mac_lock_layer's comments below
+     * for why the Mac-specific lock shortcut needs its own scoped layer
+     * rather than living directly on mac_mods. */
     conditional_layers {
         compatible = "zmk,conditional-layers";
         device_layer_cond {
             if-layers = <1 2>;
             then-layer = <3>;
+        };
+        mac_lock_cond {
+            if-layers = <4 5>;
+            then-layer = <6>;
         };
     };
 
@@ -393,12 +394,20 @@
              * Rotate: display brightness up/down (Consumer page — well
              * supported on macOS, frequently ignored by Windows for external
              * keyboards; that's a host-OS limitation, not a firmware bug).
-             * Press: system sleep, via &mac_sleep (Consumer page "Sleep",
-             * 0x32, held for 1500ms — see behaviors block comment on why a
-             * plain tap isn't enough on macOS) rather than K_SLEEP — verified
-             * against hid.c: zmk_hid_press only handles the Keyboard and
-             * Consumer HID pages, so K_SLEEP (an unofficial reserved
-             * Keyboard-page usage) would silently do nothing. */
+             * Press: lock the screen. This is the PC default — &kp LG(L),
+             * Win+L, the standard Windows lock shortcut. Mac mode needs a
+             * DIFFERENT shortcut (Ctrl+Cmd+Q) — that override lives on the
+             * mac_lock_layer conditional layer (index 6, active only while
+             * BOTH esc_layer and mac_mods are simultaneously active), NOT
+             * directly on mac_mods itself. Reason: unlike the Row4 modifier
+             * positions mac_mods overrides unconditionally, row5 (encoder
+             * push) has a different valid meaning on every other layer
+             * (disp_cycle/play-pause/middle-click/none) — a plain override
+             * on mac_mods here would silently break &disp_cycle whenever Mac
+             * mode is toggled on, even without Esc held. See mac_lock_layer
+             * below for the actual Mac binding. (Previously locked... er,
+             * slept, via &mac_sleep — dropped in favor of locking per user
+             * request.) */
             sensor-bindings = <&inc_dec_kp C_BRI_DN C_BRI_UP>;
             bindings = <
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
@@ -406,7 +415,7 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&mac_sleep
+&kp LG(L)
             >;
         };
 
@@ -414,8 +423,10 @@
             display-name = "MAC MODE";
             /* Toggled by &tog 5 from device_layer's `0` key. &trans everywhere
              * except the 4 modifier positions below — never bind anything else
-             * on this layer, it stays active during normal typing and would
-             * shadow the base layer.
+             * on this layer (including row5/encoder push — see mac_lock_layer
+             * below for why that's a separate conditional layer instead), it
+             * stays active during normal typing and would shadow the base
+             * layer (or, for row5, &disp_cycle) for as long as Mac mode is on.
              *
              * Right `<>` (COL11) deliberately stays &trans (→ base LCTRL, i.e.
              * real Control) even in Mac mode: macOS genuinely needs a Control
@@ -432,8 +443,27 @@
             >;
         };
 
+        mac_lock_layer {
+            display-name = "MAC LOCK";
+            /* Conditional layer (index 6) — active only while esc_layer(4)
+             * AND mac_mods(5) are BOTH active, i.e. holding Esc while already
+             * in Mac mode. All &trans except row5 (encoder push): Ctrl+Cmd+Q,
+             * the current default macOS lock-screen shortcut (verified — see
+             * commit message), overriding esc_layer's PC default (Win+L) only
+             * in this exact scoped moment. See esc_layer's comment for why
+             * this can't just live on mac_mods directly. */
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&kp LC(LG(Q))
+            >;
+        };
+
         /* Reserved for ZMK Studio expansion. NOTE: shifted from indices 3-5 to
-         * 6-8 in this revision — run "Restore Stock Settings" in Studio after
+         * 7-9 in this revision — run "Restore Stock Settings" in Studio after
          * flashing before re-customizing (see keymap header comment). */
         extra1 { status = "reserved"; };
         extra2 { status = "reserved"; };

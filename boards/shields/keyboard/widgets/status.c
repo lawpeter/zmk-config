@@ -110,23 +110,29 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
 
     lv_canvas_draw_text(canvas, 0, 0, CANVAS_SIZE, &label_dsc, output_text);
 
-    // Draw WPM
+    // Draw CPM (characters per minute = WPM x 5 — the "word" ZMK's WPM
+    // subsystem uses is already standardized to 5 chars, see wpm.c's
+    // CHARS_PER_WORD, so this is an exact conversion of the same
+    // underlying data, not an approximation). Converted here at draw time
+    // only — state->wpm[] itself stays raw WPM (uint8_t, from the stock
+    // nice_view status_state struct) so this can't overflow it.
     lv_canvas_draw_rect(canvas, 0, 21, 68, 42, &rect_white_dsc);
     lv_canvas_draw_rect(canvas, 1, 22, 66, 40, &rect_black_dsc);
 
-    char wpm_text[6] = {};
-    snprintf(wpm_text, sizeof(wpm_text), "%d", state->wpm[9]);
-    lv_canvas_draw_text(canvas, 42, 52, 24, &label_dsc_wpm, wpm_text);
+    char cpm_text[8] = {};
+    snprintf(cpm_text, sizeof(cpm_text), "%d", state->wpm[9] * 5);
+    lv_canvas_draw_text(canvas, 40, 52, 26, &label_dsc_wpm, cpm_text);
 
     int max = 0;
-    int min = 256;
+    int min = 256 * 5;
 
     for (int i = 0; i < 10; i++) {
-        if (state->wpm[i] > max) {
-            max = state->wpm[i];
+        int cpm = state->wpm[i] * 5;
+        if (cpm > max) {
+            max = cpm;
         }
-        if (state->wpm[i] < min) {
-            min = state->wpm[i];
+        if (cpm < min) {
+            min = cpm;
         }
     }
 
@@ -137,8 +143,9 @@ static void draw_top(lv_obj_t *widget, lv_color_t cbuf[], const struct status_st
 
     lv_point_t points[10];
     for (int i = 0; i < 10; i++) {
+        int cpm = state->wpm[i] * 5;
         points[i].x = 2 + i * 7;
-        points[i].y = 60 - (state->wpm[i] - min) * 36 / range;
+        points[i].y = 60 - (cpm - min) * 36 / range;
     }
     lv_canvas_draw_line(canvas, points, 10, &line_dsc);
 
