@@ -7,14 +7,17 @@
  * The nice_view widget files (util / bolt / status) are compiled via our
  * CMakeLists.txt so we can call zmk_widget_status_init() for mode 0.
  *
- * Mode layout (0-indexed, matching PRD §6.1 one-indexed modes):
+ * Mode layout (0-indexed):
  *   0  Status     — layer / BLE / battery / WPM  (nice_view status widget)
  *   1  WPM        — live WPM counter (zmk_widget_wpm)
  *   2  Battery    — battery percentage + bar
- *   3  Volume     — placeholder (ZMK has no volume state)
- *   4  TypingTest — typing-test widget (zmk_widget_typing_test)
- *   5  Uptime     — placeholder
- *   6  Animation  — placeholder
+ *   3  TypingTest — typing-test widget (zmk_widget_typing_test)
+ *
+ * REVISION: originally 7 modes (PRD §6.1) — Volume, Uptime, and Animation
+ * were static-text placeholders with no real data behind them (ZMK has no
+ * volume state to read, and the other two were never actually built out).
+ * Removed rather than kept as screens that show nothing useful; TypingTest
+ * renumbered from 4 to 3 to close the gap.
  */
 
 #include <zephyr/kernel.h>
@@ -50,11 +53,6 @@ static struct zmk_widget_typing_test tt_widget;
 /* Battery screen state */
 static lv_obj_t  *battery_canvas;
 static lv_color_t battery_cbuf[CANVAS_SIZE * CANVAS_SIZE];
-
-/* Static-text canvas buffers for modes 3, 5, 6 */
-static lv_color_t vol_cbuf[CANVAS_SIZE * CANVAS_SIZE];
-static lv_color_t uptime_cbuf[CANVAS_SIZE * CANVAS_SIZE];
-static lv_color_t anim_cbuf[CANVAS_SIZE * CANVAS_SIZE];
 
 /* ── Display mode listener ─────────────────────────────────────────────────── */
 
@@ -158,32 +156,6 @@ ZMK_SUBSCRIPTION(battery_mode_listener, zmk_battery_state_changed);
 ZMK_SUBSCRIPTION(battery_mode_listener, zmk_usb_conn_state_changed);
 #endif
 
-/* ── Static text canvas helper ──────────────────────────────────────────────
- * Creates a screen with a single centred 68×68 canvas showing `text`.
- * rotate_canvas is called once so the text appears portrait-correct.          */
-
-static lv_obj_t *make_text_screen(const char *text, lv_color_t *cbuf) {
-    lv_obj_t *screen = lv_obj_create(NULL);
-    lv_obj_t *canvas = lv_canvas_create(screen);
-    lv_obj_align(canvas, LV_ALIGN_TOP_LEFT, 46, 0);
-    lv_canvas_set_buffer(canvas, cbuf, CANVAS_SIZE, CANVAS_SIZE, LV_IMG_CF_TRUE_COLOR);
-
-    lv_draw_rect_dsc_t rect_bg;
-    lv_draw_rect_dsc_init(&rect_bg);
-    rect_bg.bg_color = LVGL_BACKGROUND;
-    lv_canvas_draw_rect(canvas, 0, 0, CANVAS_SIZE, CANVAS_SIZE, &rect_bg);
-
-    lv_draw_label_dsc_t lbl;
-    lv_draw_label_dsc_init(&lbl);
-    lbl.color = LVGL_FOREGROUND;
-    lbl.font  = &lv_font_montserrat_16;
-    lbl.align = LV_TEXT_ALIGN_CENTER;
-    lv_canvas_draw_text(canvas, 0, 24, CANVAS_SIZE, &lbl, text);
-
-    rotate_canvas(canvas, cbuf);
-    return screen;
-}
-
 /* ── Screen factory ─────────────────────────────────────────────────────────── */
 
 lv_obj_t *zmk_display_status_screen(void) {
@@ -203,14 +175,10 @@ lv_obj_t *zmk_display_status_screen(void) {
     lv_canvas_set_buffer(battery_canvas, battery_cbuf, CANVAS_SIZE, CANVAS_SIZE,
                          LV_IMG_CF_TRUE_COLOR);
 
-    /* Mode 4: typing-test widget */
-    screens[4] = lv_obj_create(NULL);
-    zmk_widget_typing_test_init(&tt_widget, screens[4]);
-
-    /* Modes 3, 5, 6: static text screens rendered portrait-correct via canvas */
-    screens[3] = make_text_screen("VOL",      vol_cbuf);
-    screens[5] = make_text_screen("UPTIME",   uptime_cbuf);
-    screens[6] = make_text_screen("ANIM",     anim_cbuf);
+    /* Mode 3: typing-test widget (was mode 4 — renumbered after removing the
+     * Volume/Uptime/Animation placeholders) */
+    screens[3] = lv_obj_create(NULL);
+    zmk_widget_typing_test_init(&tt_widget, screens[3]);
 
     display_mode_listener_init();
     battery_mode_listener_init();

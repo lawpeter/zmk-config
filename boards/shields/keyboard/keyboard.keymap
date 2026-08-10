@@ -5,19 +5,19 @@
 #include <dt-bindings/zmk/pointing.h>
 
 /* Layer structure (index = declaration order in `keymap { }` below):
- *   0  default_layer — base QWERTY
+ *   0  default_layer — base QWERTY, Mac-correct modifiers (see below)
  *   1  sym_layer     — pure symbol layer (Espanso triggers)  (hold ⊃/COL9, &mo 1)
  *   2  fn_layer      — F-keys, navigation, studio/typing    (hold f/COL10, &mo 2)
  *   3  device_layer   — BT management + Mac/PC mode switch  (conditional: ⊃+f held)
  *   4  esc_layer      — brightness/lock                     (hold Esc)
- *   5  mac_mods       — Mac-mode modifier overrides          (&tog 5, from
+ *   5  pc_mods        — PC-mode modifier overrides           (&tog 5, from
  *                        device_layer's `0` key)
- *   6  mac_lock_layer — Mac-specific lock shortcut override  (conditional:
- *                        esc_layer(4) + mac_mods(5) both active)
+ *   6  pc_lock_layer  — PC-specific lock shortcut override   (conditional:
+ *                        esc_layer(4) + pc_mods(5) both active)
  *   7-9 extra1-3      — reserved for ZMK Studio expansion
  *
  * NOTE: extra1-3 shifted from indices 3-5 to 7-9 in this revision (device_layer,
- * esc_layer, mac_mods, mac_lock_layer were inserted before them). Any existing
+ * esc_layer, pc_mods, pc_lock_layer were inserted before them). Any existing
  * ZMK Studio customizations on this board are keyed to the OLD indices — run
  * "Restore Stock Settings" in Studio after flashing before re-customizing.
  *
@@ -36,12 +36,13 @@
  * down while still active (e.g. device_layer omits it on purpose; see below).
  *   default      CW=Vol+       CCW=Vol-      push=&disp_cycle (next display mode)
  *   sym (⊃)      CW=next trk   CCW=prev trk  push=play/pause
- *   fn (f)       CW=scroll dn  CCW=scroll up push=middle-click
+ *   fn (f)       CW=scroll up  CCW=scroll dn push=middle-click (inverted from
+ *                the original CW=down/CCW=up, and 4x speed — see fn_layer)
  *   device (⊃+f) — no sensor-bindings; rotation falls through to fn_layer's
  *                  scroll (harmless — same fallthrough philosophy as device_layer's
  *                  &trans key positions). push=&none
  *   esc (hold)   CW=brightness up  CCW=brightness down  push=lock screen
- *                (Win+L on PC; Ctrl+Cmd+Q on Mac — see mac_lock_layer)
+ *                (Ctrl+Cmd+Q on Mac/default; Win+L on PC — see pc_lock_layer)
  *
  * Esc key (base position 0, was &kp GRAVE):
  *   tap            → ESC
@@ -53,13 +54,16 @@
  * combo_sys_reset still targets key position 54 (now the Caps Word key) — combos
  * bind by physical position, not by what's currently bound there.
  *
- * Mac/PC modifier profile (mac_mods, layer 5): boot default is PC (layer 5 off).
- * device_layer `0` → &tog 5, a plain flip toggle — safe because it's the ONLY
- * binding involved (no Unicode mode to keep in sync anymore) and it only exists
- * on the momentary device layer, so it can never fire during normal typing
- * (mac_mods itself is &trans at that position, so `0` always types a zero
- * outside of holding ⊃+f). Right `<>` (COL11) deliberately stays Control in Mac
- * mode — see mac_mods layer comment below. */
+ * Mac/PC modifier profile: boot default is now MAC (default_layer's Row4 sends
+ * Cmd/Mission Control directly — see that layer's comment). device_layer `0` →
+ * &tog 5, a plain flip toggle — pressing it the first time switches to PC
+ * (pc_mods, layer 5, overrides Row4 back to Ctrl/Windows-key), pressing it again
+ * flips back to Mac. Safe as a plain flip because it's the ONLY binding involved
+ * (no Unicode mode to keep in sync) and only exists on the momentary device
+ * layer, so it can never fire during normal typing (pc_mods itself is &trans at
+ * that position, so `0` always types a zero outside of holding ⊃+f). Right `<>`
+ * (COL11) deliberately stays Control in both modes — see pc_mods layer comment
+ * below. */
 
 / {
     behaviors {
@@ -787,18 +791,18 @@
     /* Device layer (index 3) activates only while sym_layer (1) AND fn_layer (2)
      * are both held — i.e. ⊃+f together, neither alone.
      *
-     * mac_lock_layer (index 6) activates only while esc_layer (4) AND
-     * mac_mods (5) are both active — i.e. holding Esc while already toggled
-     * into Mac mode. See esc_layer's and mac_lock_layer's comments below
-     * for why the Mac-specific lock shortcut needs its own scoped layer
-     * rather than living directly on mac_mods. */
+     * pc_lock_layer (index 6) activates only while esc_layer (4) AND
+     * pc_mods (5) are both active — i.e. holding Esc while already toggled
+     * into PC mode. See esc_layer's and pc_lock_layer's comments below
+     * for why the PC-specific lock shortcut needs its own scoped layer
+     * rather than living directly on pc_mods. */
     conditional_layers {
         compatible = "zmk,conditional-layers";
         device_layer_cond {
             if-layers = <1 2>;
             then-layer = <3>;
         };
-        mac_lock_cond {
+        pc_lock_cond {
             if-layers = <4 5>;
             then-layer = <6>;
         };
@@ -818,21 +822,30 @@
      * Combos bind by physical position, not by current binding, so these still
      * work unchanged after POS54's binding changed to &caps_word.
      *
-     * Three keys must all be pressed within 50 ms, making accidental
-     * activation essentially impossible during normal typing. */
+     * REVISION: timeout-ms was 50, and the bootloader combo didn't fire in
+     * testing. 50ms is an extremely tight window for THIS specific combo —
+     * unlike a typical same-hand combo, LSHFT (bottom-left), RSHFT
+     * (bottom-right), and Backspace (top-right) are spread across the full
+     * width and height of the board, needing both hands to reach opposite
+     * corners. That's very unlikely to land inside 50ms for a human, combo
+     * mechanics aside. Raised to 200ms on both combos (sys_reset has the
+     * identical LSHFT+RSHFT+far-key shape, so likely has the same problem
+     * even though only bootloader was reported) — still requires a
+     * deliberate 3-key chord nothing in normal typing would produce by
+     * accident, just not a physically-unrealistic one. */
     combos {
         compatible = "zmk,combos";
 
         combo_bootloader {
             key-positions = <41 52 13>;
             bindings = <&bootloader>;
-            timeout-ms = <50>;
+            timeout-ms = <200>;
         };
 
         combo_sys_reset {
             key-positions = <41 52 54>;
             bindings = <&sys_reset>;
-            timeout-ms = <50>;
+            timeout-ms = <200>;
         };
     };
 
@@ -853,13 +866,17 @@
 /* ── Row 3: bottom alpha (COL14/MX55 = &caps_word, was &kp DEL) ─────────────── */
 &kp LSHFT &kp Z  &kp X  &kp C  &kp V  &kp B  &kp N  &kp M  &kp COMMA &kp DOT &kp FSLH &kp RSHFT &kp UP &caps_word
 /* ── Row 4: modifiers (13 keys; COL7 omitted — physical gap) ───────────────── *
- * COL1     COL2   COL3   COL4(MX59)  COL5        COL6                           *
- * <>/LCTRL ⊞/LGUI LALT   ⌘/LCTRL*    Space1(2u)  ✦/RALT  [gap]                  *
+ * COL1     COL2        COL3   COL4(MX59)  COL5        COL6                     *
+ * <>/LGUI  ⊞/LC(UP)*   LALT   ⌘/LGUI**    Space1(2u)  ✦/RALT  [gap]            *
  *                  COL8        COL9   COL10  COL11(MX65)  COL12  COL13  COL14   *
- *                  Space2(2u)  ⊃/mo1  f/mo2  <>/LCTRL**   Left   Down   Right   *
- * * MX59 (⌘): was LGUI, now LCTRL — PC-correct base; mac_mods overrides to Cmd  *
- * **MX65 (right <>): was RCTRL, now LCTRL — mac_mods leaves it &trans (Ctrl)    */
-&kp LCTRL &kp LGUI &kp LALT &kp LCTRL &kp SPACE &kp RALT &kp SPACE &mo 1 &mo 2 &kp LCTRL &kp LEFT &kp DOWN &kp RIGHT
+ *                  Space2(2u)  ⊃/mo1  f/mo2  <>/LCTRL***   Left   Down   Right  *
+ * REVISION: base is now Mac-correct (boot default = Mac mode). pc_mods (layer  *
+ * 5, toggled via device_layer's `0`) overrides these back to PC when active.   *
+ * * COL2 (⊞): Mission Control (Ctrl+Up) by default now, not the Windows key.   *
+ * ** MX59 (⌘): sends Cmd directly at boot — pc_mods overrides to Ctrl.         *
+ * *** MX65 (right <>): stays LCTRL in BOTH modes (pc_mods leaves it &trans) —  *
+ *     macOS needs a real Control key even in Mac mode, see pc_mods comment.    */
+&kp LGUI &kp LC(UP) &kp LALT &kp LGUI &kp SPACE &kp RALT &kp SPACE &mo 1 &mo 2 &kp LCTRL &kp LEFT &kp DOWN &kp RIGHT
 /* ── Row 5: encoder push (RC(5,0)) — &disp_cycle ────────────────────────────── */
 &disp_cycle
             >;
@@ -899,7 +916,14 @@
              * Navigation:  Up → PgUp,  Left → Home,  Down → PgDn,  Right → End
              * RSHFT → &studio_unlock (hold f+RShift to unlock Studio)
              * T     → &typing_test_toggle                                      */
-            sensor-bindings = <&inc_dec_msc SCRL_DOWN SCRL_UP>;
+            /* Scroll: inverted from the original SCRL_DOWN/SCRL_UP (positions
+             * swapped) and 4x speed. Using raw MOVE_Y(±40) instead of the
+             * SCRL_UP/SCRL_DOWN macros (which use the shared default speed
+             * constant, 10) so this doesn't touch anything global — verified
+             * the exact multiplier: at trigger-period-ms=16 (stock &msc) and
+             * this tap-ms=220, speed=10 yields 2 real scroll units/detent,
+             * speed=40 yields 8 — exactly 4x, not approximate. */
+            sensor-bindings = <&inc_dec_msc MOVE_Y(40) MOVE_Y(-40)>;
             bindings = <
 /* Row 0 — number row: F1-F12 + Del */
 &trans  &kp F1  &kp F2  &kp F3  &kp F4  &kp F5  &kp F6  &kp F7  &kp F8  &kp F9  &kp F10  &kp F11  &kp F12  &kp DEL
@@ -925,7 +949,9 @@
              *   6   → BT clear current profile
              *   7   → BT_NXT  (cycle forward)
              *   8   → BT_PRV  (cycle backward)
-             *   0   → &tog 5  — flip Mac/PC modifier profile (mac_mods). Plain
+             *   0   → &tog 5  — flip Mac/PC modifier profile (pc_mods). Boot
+             *         default is Mac (base layer), so pressing this the first
+             *         time switches to PC, pressing again switches back. Plain
              *         flip is safe here: it's the only binding involved (no
              *         Unicode mode to keep in sync) and only reachable while
              *         holding ⊃+f, so it can never fire during normal typing.
@@ -960,20 +986,20 @@
              * Rotate: display brightness up/down (Consumer page — well
              * supported on macOS, frequently ignored by Windows for external
              * keyboards; that's a host-OS limitation, not a firmware bug).
-             * Press: lock the screen. This is the PC default — &kp LG(L),
-             * Win+L, the standard Windows lock shortcut. Mac mode needs a
-             * DIFFERENT shortcut (Ctrl+Cmd+Q) — that override lives on the
-             * mac_lock_layer conditional layer (index 6, active only while
-             * BOTH esc_layer and mac_mods are simultaneously active), NOT
-             * directly on mac_mods itself. Reason: unlike the Row4 modifier
-             * positions mac_mods overrides unconditionally, row5 (encoder
-             * push) has a different valid meaning on every other layer
-             * (disp_cycle/play-pause/middle-click/none) — a plain override
-             * on mac_mods here would silently break &disp_cycle whenever Mac
-             * mode is toggled on, even without Esc held. See mac_lock_layer
-             * below for the actual Mac binding. (Previously locked... er,
-             * slept, via &mac_sleep — dropped in favor of locking per user
-             * request.) */
+             * Press: lock the screen. This is the Mac/default — &kp
+             * LC(LG(Q)), Ctrl+Cmd+Q, the current default macOS lock shortcut
+             * (verified — see commit history). PC mode needs a DIFFERENT
+             * shortcut (Win+L) — that override lives on the pc_lock_layer
+             * conditional layer (index 6, active only while BOTH esc_layer
+             * and pc_mods are simultaneously active), NOT directly on
+             * pc_mods itself. Reason: unlike the Row4 modifier positions
+             * pc_mods overrides unconditionally, row5 (encoder push) has a
+             * different valid meaning on every other layer (disp_cycle/
+             * play-pause/middle-click/none) — a plain override on pc_mods
+             * here would silently break &disp_cycle whenever PC mode is
+             * toggled on, even without Esc held. See pc_lock_layer below for
+             * the actual PC binding. (Previously locked... er, slept, via
+             * &mac_sleep — dropped in favor of locking per user request.) */
             sensor-bindings = <&inc_dec_kp C_BRI_DN C_BRI_UP>;
             bindings = <
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
@@ -981,50 +1007,52 @@
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&kp LG(L)
+&kp LC(LG(Q))
             >;
         };
 
-        mac_mods {
-            display-name = "MAC MODE";
+        pc_mods {
+            display-name = "PC MODE";
             /* Toggled by &tog 5 from device_layer's `0` key. &trans everywhere
              * except the 4 modifier positions below — never bind anything else
-             * on this layer (including row5/encoder push — see mac_lock_layer
+             * on this layer (including row5/encoder push — see pc_lock_layer
              * below for why that's a separate conditional layer instead), it
              * stays active during normal typing and would shadow the base
-             * layer (or, for row5, &disp_cycle) for as long as Mac mode is on.
+             * layer (or, for row5, &disp_cycle) for as long as PC mode is on.
              *
              * Right `<>` (COL11) deliberately stays &trans (→ base LCTRL, i.e.
-             * real Control) even in Mac mode: macOS genuinely needs a Control
-             * key (Ctrl+C/SIGINT, Ctrl+Tab, Spaces switching, emacs bindings).
-             * Left `<>` and `⌘` both send Cmd instead — do not "fix" this
-             * asymmetry for consistency, it's the point. */
+             * real Control) in both modes: macOS genuinely needs a Control key
+             * (Ctrl+C/SIGINT, Ctrl+Tab, Spaces switching, emacs bindings) even
+             * while Mac mode (the boot default) sends Cmd from left `<>`/`⌘` —
+             * do not "fix" that asymmetry for consistency, it's the point. In
+             * PC mode all three of `<>`/`<>`/`⌘` send Ctrl, matching a normal
+             * PC keyboard. */
             bindings = <
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&kp LGUI  &kp LC(UP)  &trans  &kp LGUI  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
+&kp LCTRL  &kp LGUI  &trans  &kp LCTRL  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans
             >;
         };
 
-        mac_lock_layer {
-            display-name = "MAC LOCK";
+        pc_lock_layer {
+            display-name = "PC LOCK";
             /* Conditional layer (index 6) — active only while esc_layer(4)
-             * AND mac_mods(5) are BOTH active, i.e. holding Esc while already
-             * in Mac mode. All &trans except row5 (encoder push): Ctrl+Cmd+Q,
-             * the current default macOS lock-screen shortcut (verified — see
-             * commit message), overriding esc_layer's PC default (Win+L) only
-             * in this exact scoped moment. See esc_layer's comment for why
-             * this can't just live on mac_mods directly. */
+             * AND pc_mods(5) are BOTH active, i.e. holding Esc while already
+             * toggled into PC mode. All &trans except row5 (encoder push):
+             * Win+L, the standard Windows lock shortcut, overriding
+             * esc_layer's Mac/default (Ctrl+Cmd+Q) only in this exact scoped
+             * moment. See esc_layer's comment for why this can't just live
+             * on pc_mods directly. */
             bindings = <
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans
-&kp LC(LG(Q))
+&kp LG(L)
             >;
         };
 

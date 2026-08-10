@@ -18,7 +18,7 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 - [Mac / PC mode switch](#mac--pc-mode-switch)
 - [Caps Word vs. Caps Lock](#caps-word-vs-caps-lock)
 - [Rotary encoder — full behavior table](#rotary-encoder--full-behavior-table)
-- [Display — 7 modes](#display--7-modes)
+- [Display — 4 modes](#display--4-modes)
 - [Safety combos (bootloader / reset)](#safety-combos-bootloader--reset)
 - [Bluetooth](#bluetooth)
 - [Typing test](#typing-test)
@@ -39,8 +39,8 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 | 2 | `fn_layer` | hold `f` (momentary) |
 | 3 | `device_layer` | hold `⊃` **and** `f` together (conditional layer — neither key alone triggers it) |
 | 4 | `esc_layer` | hold `Esc` |
-| 5 | `mac_mods` | toggled on/off from the device layer (`0`) — see [Mac / PC mode switch](#mac--pc-mode-switch) |
-| 6 | `mac_lock_layer` | conditional — active only while `esc_layer`(4) **and** `mac_mods`(5) are both active (holding `Esc` while already in Mac mode); overrides just the lock shortcut, see [Esc-hold layer](#esc-hold-brightnesslock-layer) |
+| 5 | `pc_mods` | toggled on/off from the device layer (`0`) — see [Mac / PC mode switch](#mac--pc-mode-switch) |
+| 6 | `pc_lock_layer` | conditional — active only while `esc_layer`(4) **and** `pc_mods`(5) are both active (holding `Esc` while already in PC mode); overrides just the lock shortcut, see [Esc-hold layer](#esc-hold-brightnesslock-layer) |
 | 7-9 | `extra1`–`extra3` | reserved, empty — for ad-hoc ZMK Studio customization only |
 
 Layers 1, 2, and 4 are momentary (active only while held). Layer 3 requires both
@@ -62,11 +62,12 @@ Standard QWERTY, with these keyboard-specific points:
 - **Backspace / Delete** — the Backspace key is a mod-morph: plain tap is Backspace,
   **Shift + tap is Delete**. (Also still reachable via `f` + Backspace, see
   [Function layer](#function-layer-f) — either works.)
-- **Modifier row** (left to right): `<>` (Ctrl) · `⊞` (Win) · Alt · `⌘` (Ctrl, PC
-  default) · Space · `✦` (Right Alt, unassigned/reserved — see
+- **Modifier row** (left to right): `<>` (Cmd) · `⊞` (Mission Control) · Alt ·
+  `⌘` (Cmd, Mac default) · Space · `✦` (Right Alt, unassigned/reserved — see
   [Known limitations](#known-limitations)) · Space · `⊃` · `f` · `<>` (Ctrl) · arrows.
-  In PC mode (default) all three `<>`/`<>`/`⌘` keys send Ctrl. In Mac mode this
-  changes — see [Mac / PC mode switch](#mac--pc-mode-switch).
+  In Mac mode (boot default) left `<>` and `⌘` send Cmd, `⊞` triggers Mission
+  Control, right `<>` stays Ctrl. In PC mode this changes — see
+  [Mac / PC mode switch](#mac--pc-mode-switch).
 
 ---
 
@@ -268,9 +269,9 @@ every regular key is inert on this layer.
 |---|---|
 | Rotate CW | Brightness up |
 | Rotate CCW | Brightness down |
-| Push | **Lock the screen** — `Win+L` in PC mode, `Ctrl+Cmd+Q` in Mac mode (see
-[Mac / PC mode switch](#mac--pc-mode-switch); this is the one place the Mac/PC
-setting affects something outside the modifier row itself) |
+| Push | **Lock the screen** — `Ctrl+Cmd+Q` in Mac mode (boot default), `Win+L` in
+PC mode (see [Mac / PC mode switch](#mac--pc-mode-switch); this is the one place the
+Mac/PC setting affects something outside the modifier row itself) |
 
 Both are each OS's own default shortcut, not something this firmware invents — if
 you've customized or disabled either shortcut in your OS settings, this won't work
@@ -286,7 +287,7 @@ Windows for external keyboards; this is a host-OS limitation, not a firmware bug
 The board has two "modes" for how the modifier keys behave, switched from the
 [device layer](#device-layer--f):
 
-- **`0`** toggles between PC mode (**boot default**) and Mac mode.
+- **`0`** toggles between Mac mode (**boot default**) and PC mode.
 
 This is a plain flip toggle (not two separate keys) — safe here because it's the
 *only* thing tied to it (an earlier revision also kept a Unicode input mode in sync
@@ -298,24 +299,23 @@ unless you're holding `⊃`+`f`.
 
 **What changes between modes:**
 
-| Key | PC mode (default) | Mac mode |
+| Key | Mac mode (boot default) | PC mode |
 |---|---|---|
-| Left `<>` (modifier row, leftmost) | Ctrl | **Cmd** |
-| `⊞` (Windows key) | Windows key | **Mission Control** (`Ctrl+Up`) |
-| `⌘` (modifier row, 4th key) | Ctrl | **Cmd** |
-| Right `<>` (modifier row, right of `f`) | Ctrl | **Ctrl (unchanged)** |
+| Left `<>` (modifier row, leftmost) | **Cmd** | Ctrl |
+| `⊞` (Windows key) | **Mission Control** (`Ctrl+Up`) | Windows key |
+| `⌘` (modifier row, 4th key) | **Cmd** | Ctrl |
+| Right `<>` (modifier row, right of `f`) | **Ctrl (unchanged)** | Ctrl |
 
-The right `<>` key **deliberately stays Control in Mac mode** — this is not a bug.
-macOS genuinely needs a real Control key: `Ctrl+C` to interrupt a running process in
-a terminal (there's no Cmd equivalent for SIGINT), `Ctrl+←/→` for Spaces switching,
-`Ctrl+Tab` in browsers, and emacs-style `Ctrl+A`/`Ctrl+E` text bindings. If every
-`<>` key sent Cmd in Mac mode, the board would have no way to send Control at all.
-So: left `<>` and `⌘` both become Cmd (whichever your muscle memory reaches for),
-right `<>` stays Control.
+The right `<>` key **deliberately stays Control in Mac mode too** — this is not a
+bug. macOS genuinely needs a real Control key: `Ctrl+C` to interrupt a running
+process in a terminal (there's no Cmd equivalent for SIGINT), `Ctrl+←/→` for Spaces
+switching, `Ctrl+Tab` in browsers, and emacs-style `Ctrl+A`/`Ctrl+E` text bindings.
+If every `<>` key sent Cmd in Mac mode, the board would have no way to send Control
+at all. So: left `<>` and `⌘` both send Cmd (whichever your muscle memory reaches
+for), right `<>` always sends Control.
 
 Unlike the modifier profile, [symbol-layer](#symbol-layer-⊃) output doesn't depend
-on this switch at all anymore — Espanso triggers work identically regardless of
-Mac/PC mode.
+on this switch at all — Espanso triggers work identically regardless of Mac/PC mode.
 
 ---
 
@@ -338,15 +338,15 @@ The encoder's rotation and push behavior depends on which layer (if any) is held
 
 | Context | Rotate CW | Rotate CCW | Push |
 |---|---|---|---|
-| Default (nothing held) | Volume up | Volume down | Cycle [display mode](#display--7-modes) (long-press resets to mode 1) |
+| Default (nothing held) | Volume up | Volume down | Cycle [display mode](#display--4-modes) (long-press resets to mode 1) |
 | `⊃` held | Next track | Previous track | Play/Pause |
-| `f` held | Scroll down | Scroll up | Middle-click |
+| `f` held | Scroll up (4x speed) | Scroll down (4x speed) | Middle-click |
 | `⊃` + `f` held (device layer) | *(falls through to `f`'s scroll — see [device layer](#device-layer--f))* | | No-op |
-| `Esc` held | Brightness up | Brightness down | Lock screen (`Win+L` PC / `Ctrl+Cmd+Q` Mac) |
+| `Esc` held | Brightness up | Brightness down | Lock screen (`Ctrl+Cmd+Q` Mac / `Win+L` PC) |
 
 ---
 
-## Display — 7 modes
+## Display — 4 modes
 
 Press the encoder (on the base layer, nothing else held) to cycle through display
 modes; long-press to jump back to mode 1.
@@ -356,11 +356,12 @@ modes; long-press to jump back to mode 1.
 2. **WPM** — live words-per-minute counter (a separate, dedicated screen — unrelated
    to mode 1's CPM graph)
 3. **Battery** — large battery percentage + charge bar
-4. **Volume** — ⚠️ static placeholder only (ZMK has no volume state to read; see
-   [Known limitations](#known-limitations))
-5. **Typing Test** — results screen for the [typing test](#typing-test)
-6. **Uptime** — ⚠️ static placeholder only, doesn't show a live clock
-7. **Animation** — ⚠️ static placeholder only, no actual animation implemented
+4. **Typing Test** — results screen for the [typing test](#typing-test)
+
+Volume, Uptime, and Animation modes were removed — they were static-text
+placeholders with no real data behind them (ZMK has no volume state to read, and
+the other two were never actually built out), so rather than leave dead screens in
+the cycle they were dropped entirely.
 
 ---
 
@@ -387,7 +388,7 @@ activation during normal typing is essentially impossible):
 ## Typing test
 
 Press `f` + `T` to start a typing test; press it again to stop and see results.
-Switch the display to mode 5 (see [Display](#display--7-modes)) to watch it live or
+Switch the display to mode 4 (see [Display](#display--4-modes)) to watch it live or
 review the result. Screen reads, top to bottom: `READY`/`TYPING`/`DONE` (phase),
 then once done, one stat per line — `WPM`, `CPM`, `TIME`, `KEYS`.
 
@@ -401,7 +402,7 @@ rebuild — everything else in this document is defined in the firmware itself a
 Studio changes to those layers won't persist across a reflash.
 
 > If you're flashing after a layer-count change (the original restructure that added
-> device/Esc/Mac-mode layers, or the later addition of `mac_lock_layer`):
+> device/Esc/mode-switch layers, or the later addition of `pc_lock_layer`):
 > `extra1`–`extra3`'s indices shift every time. Any Studio customization made before
 > such a change is keyed to the old indices — run **Restore Stock Settings** in
 > Studio after flashing, then re-customize.
@@ -453,12 +454,9 @@ local Zephyr toolchain is required or expected for normal use of this repo.
   games, some terminal emulators, apps that grab exclusive keyboard input) don't
   respect system-wide text expansion — symbol triggers may not expand there even
   with Espanso running correctly everywhere else.
-- **Mac/PC mode resets to PC (default) on every reboot** — it isn't saved to flash.
-  If you reboot while in Mac mode, press `0` (holding `⊃`+`f`) again once the board
+- **Mac/PC mode resets to Mac (default) on every reboot** — it isn't saved to flash.
+  If you reboot while in PC mode, press `0` (holding `⊃`+`f`) again once the board
   comes back up.
-- **Display modes 4 (Volume), 6 (Uptime), and 7 (Animation) are static placeholders**
-  — they show fixed text, not live data. ZMK has no volume state to read, and the
-  uptime/animation modes were never built out beyond a label.
 - **The `✦` key (Right Alt, between the two spacebars) has no assigned function**
   beyond sending plain Right Alt — a "gaming profile" or other use for it is
   undecided and deliberately unassigned for now.
