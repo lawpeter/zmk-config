@@ -1,0 +1,20 @@
+# Copyright (c) 2026 keyboard project
+# SPDX-License-Identifier: MIT
+
+description: >
+  Picks between two bindings based on whether Shift is currently held —
+  identical branching logic to zmk,behavior-mod-morph, but without its
+  built-in modifier-masking side effect (which conflicts with macros that
+  do their own masking via &shift_mask; see behavior_shift_branch.c).
+
+compatible: "zmk,behavior-shift-branch"
+
+include: zero_param.yaml
+
+properties:
+  bindings:
+    type: phandle-array
+    required: true
+  mods:
+    type: int
+    required: true

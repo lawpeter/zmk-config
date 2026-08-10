@@ -65,24 +65,32 @@
     behaviors {
         /* Sensor-rotate behavior using &msc (mouse scroll) for the fn_layer.
          *
-         * tap-ms=32 is required, not cosmetic — traced this via source, not
-         * guessing: sensor-rotate-common queues each detent as press-then-
-         * release exactly tap_ms apart (behavior_sensor_rotate_common.c).
-         * &msc (zmk,behavior-input-two-axis) only emits a HID report from a
-         * periodic k_work timer that fires every trigger-period-ms (stock
-         * default 16ms, set in mouse_scroll.dtsi, not overridden here) WHILE
-         * "pressed"; on release it's cancelled outright
-         * (update_work_scheduling() -> k_work_cancel_delayable). The
-         * built-in tap-ms default for this behavior type is 5ms — shorter
-         * than the 16ms tick period — so every single detent's release fired
-         * before the first tick ever had a chance to run, meaning ZERO scroll
-         * reports were ever sent, confirmed as the cause of "nothing happens
-         * at all" when testing f+encoder. 32ms (2 ticks/detent) fixes it;
-         * raise further if scrolling still feels too light per click. */
+         * REVISION: 32ms (my first attempt) fixed the "queue always cancels
+         * before any tick runs" bug (see below) but was still nowhere near
+         * enough — it produced literally zero visible scroll. Traced the
+         * exact numbers via source (behavior_input_two_axis.c) rather than
+         * guessing again: with SCRL_UP/SCRL_DOWN's default speed value
+         * (ZMK_POINTING_DEFAULT_SCRL_VAL = 10, dt-bindings/zmk/pointing.h)
+         * and &msc's trigger-period-ms (16ms, mouse_scroll.dtsi, unmodified
+         * — this project doesn't override the stock &msc node) and
+         * acceleration-exponent=0 (uniform speed), each 16ms tick computes
+         * move = speed * trigger_period_ms / 1000 = 10*16/1000 = 0.16 — and
+         * track_remainder() truncates to an integer HID delta each tick, so
+         * a SINGLE tick never emits anything; the fractional 0.16 has to
+         * accumulate across MULTIPLE ticks before crossing 1.0. Worked out
+         * precisely: tick 7 (112ms of continuous "press") is the first tick
+         * that ever emits a real unit; tick 13 (208ms) the second. 32ms only
+         * covered ticks 1-2, both emitting exactly 0 — hence "zero movement,
+         * ever," not "weak movement." tap-ms=220 covers both the 112ms and
+         * 208ms thresholds with margin, giving ~2 real scroll units per
+         * detent. This value trades off directly against real-time feel per
+         * click; raise it for a stronger scroll per detent, lower it (not
+         * below ~120ms) for a lighter one — but don't go below ~112ms or
+         * you're back to the "nothing happens" case for slow/light turns. */
         inc_dec_msc: inc_dec_msc {
             compatible = "zmk,behavior-sensor-rotate-var";
             #sensor-binding-cells = <2>;
-            tap-ms = <32>;
+            tap-ms = <220>;
             bindings = <&msc>, <&msc>;
         };
 
@@ -123,8 +131,11 @@
         };
 
         /* Suppresses Shift from the outgoing HID report between press and
-         * release — see behaviors/behavior_shift_mask.c. Used only inside
-         * the uppercase-Greek "_upper" macros below. */
+         * release — see behaviors/behavior_shift_mask.c. Used inside all
+         * 45 "_upper"/"_shift" macros below, invoked from &shift_branch
+         * (behavior_shift_branch.c), not zmk,behavior-mod-morph — see the
+         * "Uppercase Greek" comment below for why plain mod-morph doesn't
+         * work here. */
         shift_mask: shift_mask {
             compatible = "zmk,behavior-shift-mask";
             #binding-cells = <0>;
@@ -195,33 +206,38 @@
 
         /* ── Uppercase Greek: ⊃ + Shift + letter ──────────────────────
          * Each Greek key position (in sym_layer, below) is wrapped in a
-         * mod-morph that picks between the lowercase macro above and one
-         * of these "_upper" macros when Shift is held.
+         * &shift_branch (behaviors/behavior_shift_branch.c) that picks
+         * between the lowercase macro above and one of these "_upper"
+         * macros when Shift is held.
          *
-         * REVISION: originally relied on mod-morph's own built-in masking
-         * (its masked-modifiers window is tied to the mod-morph's own
-         * press/release, i.e. the physical LETTER key's hold duration).
-         * That breaks the moment Shift is held across MULTIPLE letters
-         * (the normal "hold shift, type several capitals" gesture) rather
-         * than tapped briefly alongside the letter: these macros' own
-         * queued keystroke sequences run asynchronously and can take
-         * longer to drain than the physical letter key is held, so if
-         * Shift is still down when mod-morph's masking window ends (at
-         * letter-release) but the macro hasn't finished yet, the tail of
-         * the trigger text goes out genuinely shifted — producing a
-         * mixed-case string that matches no trigger at all.
+         * REVISION 1: originally used &shift_mask alone, invoked by a
+         * plain zmk,behavior-mod-morph — broke the moment Shift was held
+         * across MULTIPLE letters (the normal "hold shift, type several
+         * capitals" gesture), because these macros' queued keystroke
+         * sequences run asynchronously and can take longer to drain than
+         * the physical letter key is held.
          *
-         * Fixed by having each macro do its OWN masking via &shift_mask
-         * (a small custom behavior, boards/shields/keyboard/behaviors/
-         * behavior_shift_mask.c — wraps zmk_hid_masked_modifiers_set/
-         * clear), scoped to exactly this macro's own start-to-finish
-         * window via &macro_press/&macro_release, independent of how
-         * long the physical Shift or letter keys are actually held. This
-         * doesn't touch real key-press state (unlike explicitly injecting
-         * &kp LSHFT release/press), so there's no risk of Shift getting
-         * "stuck" held if the user releases it mid-macro — masking is a
-         * pure real-time filter that stops applying the instant
-         * &shift_mask releases, whatever the true state is at that point.
+         * REVISION 2: adding &shift_mask (invoked via &macro_press/
+         * &macro_release inside each macro, scoped to that macro's own
+         * start-to-finish window) was necessary but NOT sufficient —
+         * mod-morph's own on_mod_morph_binding_released() ALSO
+         * unconditionally calls zmk_hid_masked_modifiers_clear() tied to
+         * the physical letter key's release. Both mechanisms write the
+         * SAME global masked_modifiers variable (zmk/hid.c) — a flat
+         * set/clear, not reference-counted — so mod-morph's own clear
+         * could still fire in the middle of a macro's masked window and
+         * wipe it out early, letting the tail of the trigger text go out
+         * shifted again. Confirmed as the actual reason it kept breaking.
+         *
+         * FIX: &shift_branch is a mod-morph clone with the masking side
+         * effect surgically removed — it does ONLY the branching
+         * decision. &shift_mask (still invoked from inside each macro,
+         * unchanged) is now the ONLY thing touching masked_modifiers, so
+         * nothing competes with it. This doesn't touch real key-press
+         * state (unlike explicitly injecting &kp LSHFT release/press), so
+         * there's no risk of Shift getting "stuck" held if released
+         * mid-macro — masking is a pure real-time filter that stops
+         * applying the instant &shift_mask itself releases.
          *
          * Trigger text distinguishing: these still need their own
          * distinct trigger rather than relying on case, since masking
@@ -318,127 +334,127 @@
                               &macro_release &shift_mask>;)
 
         sym_alpha_morph: sym_alpha_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_alpha>, <&sym_alpha_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_beta_morph: sym_beta_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_beta>, <&sym_beta_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_gamma_morph: sym_gamma_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_gamma>, <&sym_gamma_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_delta_morph: sym_delta_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_delta>, <&sym_delta_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_eps_morph: sym_eps_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_eps>, <&sym_eps_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_zeta_morph: sym_zeta_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_zeta>, <&sym_zeta_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_eta_morph: sym_eta_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_eta>, <&sym_eta_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_theta_morph: sym_theta_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_theta>, <&sym_theta_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_iota_morph: sym_iota_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_iota>, <&sym_iota_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_kappa_morph: sym_kappa_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_kappa>, <&sym_kappa_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_lambda_morph: sym_lambda_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_lambda>, <&sym_lambda_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_mu_morph: sym_mu_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_mu>, <&sym_mu_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_nu_morph: sym_nu_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_nu>, <&sym_nu_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_pi_morph: sym_pi_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_pi>, <&sym_pi_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_rho_morph: sym_rho_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_rho>, <&sym_rho_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_sigma_morph: sym_sigma_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_sigma>, <&sym_sigma_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_tau_morph: sym_tau_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_tau>, <&sym_tau_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_phi_morph: sym_phi_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_phi>, <&sym_phi_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_chi_morph: sym_chi_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_chi>, <&sym_chi_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_psi_morph: sym_psi_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_psi>, <&sym_psi_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_omega_morph: sym_omega_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_omega>, <&sym_omega_upper>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
@@ -496,8 +512,10 @@
 
         /* ── Shift variants for the remaining 24 symbols ──────────────
          * Same mechanism as uppercase Greek above: ⊃ + Shift + key gives
-         * a second, related symbol via a mod-morph + &shift_mask-wrapped
-         * macro. Naming here is "_shift" rather than "_upper" since these
+         * a second, related symbol via a &shift_branch + &shift_mask-wrapped
+         * macro (see the "Uppercase Greek" comment above for why plain
+         * mod-morph doesn't work for this). Naming here is "_shift" rather
+         * than "_upper" since these
          * aren't case pairs of one glyph, just a second assigned symbol
          * per key. New symbols and mnemonics (mnemonic is unrelated to
          * the base key's own mnemonic on purpose, so it reads on its own
@@ -611,145 +629,145 @@
                               &macro_release &shift_mask>;)
 
         sym_pm_morph: sym_pm_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_pm>, <&sym_pm_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_sub_morph: sym_sub_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_sub>, <&sym_sub_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_isin_morph: sym_isin_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_isin>, <&sym_isin_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_yen_morph: sym_yen_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_yen>, <&sym_yen_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_pd_morph: sym_pd_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_pd>, <&sym_pd_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_int_morph: sym_int_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_int>, <&sym_int_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_nabla_morph: sym_nabla_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_nabla>, <&sym_nabla_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_inf_morph: sym_inf_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_inf>, <&sym_inf_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_sqrt_morph: sym_sqrt_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_sqrt>, <&sym_sqrt_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_deg_morph: sym_deg_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_deg>, <&sym_deg_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_ne_morph: sym_ne_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_ne>, <&sym_ne_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_approx_morph: sym_approx_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_approx>, <&sym_approx_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_fa_morph: sym_fa_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_fa>, <&sym_fa_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_te_morph: sym_te_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_te>, <&sym_te_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_perp_morph: sym_perp_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_perp>, <&sym_perp_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_emd_morph: sym_emd_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_emd>, <&sym_emd_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_tf_morph: sym_tf_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_tf>, <&sym_tf_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_le_morph: sym_le_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_le>, <&sym_le_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_ge_morph: sym_ge_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_ge>, <&sym_ge_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_irb_morph: sym_irb_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_irb>, <&sym_irb_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_up_morph: sym_up_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_up>, <&sym_up_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_rt_morph: sym_rt_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_rt>, <&sym_rt_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_dn_morph: sym_dn_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_dn>, <&sym_dn_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;
         };
         sym_lt_morph: sym_lt_morph {
-            compatible = "zmk,behavior-mod-morph";
+            compatible = "zmk,behavior-shift-branch";
             #binding-cells = <0>;
             bindings = <&sym_lt>, <&sym_lt_shift>;
             mods = <(MOD_LSFT|MOD_RSFT)>;

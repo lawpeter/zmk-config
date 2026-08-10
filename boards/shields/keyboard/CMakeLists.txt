@@ -57,3 +57,9 @@ zephyr_library_sources(behaviors/behavior_typing_test.c)
 # Greek sym_layer triggers need Shift suppressed for their own duration,
 # independent of how long the physical Shift/letter keys are held).
 zephyr_library_sources(behaviors/behavior_shift_mask.c)
+
+# shift_branch behavior — guarded internally by DT_HAS_COMPAT_STATUS_OKAY.
+# mod-morph-alike branching (pick a binding based on current Shift state)
+# WITHOUT mod-morph's own built-in masking, which conflicts with &shift_mask
+# used inside the invoked macros — see behavior_shift_branch.c for why.
+zephyr_library_sources(behaviors/behavior_shift_branch.c)
