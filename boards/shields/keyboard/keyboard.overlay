@@ -220,3 +220,32 @@ RC(5,0)
         >;
     };
 };
+
+/* ============================ TEMPORARY — DELETE ME ============================
+ * Step 0 instrumentation: routes the Zephyr console to its own USB CDC ACM
+ * interface so debug/i2c_scan_timing.c can report the measured I2C write cost.
+ *
+ * This inlines what ZMK's zmk-usb-logging snippet does, rather than adding that
+ * snippet to build.yaml, because the CI workflow expands the `snippet:` field as
+ * a single  -S "${snippet}"  argument (build-user-config.yml line 77), so a
+ * second snippet listed alongside studio-rpc-usb-uart will not parse.
+ *
+ * The studio snippet declares its own separate CDC ACM node
+ * (snippet_studio_rpc_usb_uart), so the two coexist: the host enumerates two
+ * serial ports, one for Studio RPC and one for the log console.
+ *
+ * Remove this block, CONFIG_ZMK_USB_LOGGING in keyboard.conf, the debug/ shim
+ * and its CMakeLists line once the scan duration is recorded.
+ * ============================================================================ */
+/ {
+    chosen {
+        zephyr,console    = &kbd_debug_console;
+        zephyr,shell-uart = &kbd_debug_console;
+    };
+};
+
+&zephyr_udc0 {
+    kbd_debug_console: kbd_debug_console {
+        compatible = "zephyr,cdc-acm-uart";
+    };
+};
