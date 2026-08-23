@@ -34,6 +34,16 @@
  * and the PCB netlist confirms U2 pad 21 as unconnected-(U2-GPA0-Pad21). The
  * key matrix is untouched.
  *
+ * Bus integrity check
+ * -------------------
+ * 400 kHz is out of I2C fast-mode rise-time spec on this board (internal ~13k
+ * pull-ups only, no external resistors — PRD SS2.3 and the BOM confirm none).
+ * A marginal bus NACKs, and a NACK *aborts early*, so a broken bus can report a
+ * deceptively FAST time. Timing alone therefore cannot tell "fast" from
+ * "broken". So we also count failed writes and do a write/read-back pass: drive
+ * the pin, read the port back, confirm the level survived the round trip.
+ * Zero errors and zero mismatches is what makes a speed bump trustworthy.
+ *
  * Why the result is reported on a repeating timer
  * -----------------------------------------------
  * The measurement has to happen at POST_KERNEL to get an idle bus, but the USB
@@ -69,10 +79,16 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 /* kscan_gpio_matrix.c does 2 writes per column across 14 col-gpios. */
 #define WRITES_PER_SCAN 28
 
+/* Round trips for the integrity pass (write, read back, compare). */
+#define VERIFY_ITERATIONS 200
+
 /* Cached so the repeating reporter can re-emit it once the USB console exists. */
 static uint32_t measured_us_per_write;
 static int measured_elapsed_ms;
 static bool measurement_valid;
+static uint32_t write_errors;
+static uint32_t verify_errors;
+static uint32_t verify_mismatches;
 
 /* Re-log every REPORT_PERIOD until REPORT_COUNT is exhausted, so the line is
  * catchable whenever the host opens the port. Stops on its own rather than
@@ -95,6 +111,18 @@ static void i2c_scan_timing_report(struct k_work *work) {
                 "est full 14-col scan = %u us (%u.%02u ms)",
                 (unsigned)PROBE_WRITES, measured_elapsed_ms, measured_us_per_write, scan_us,
                 scan_us / 1000, (scan_us % 1000) / 10);
+
+        /* Integrity verdict is what licenses an out-of-spec clock, so make it
+         * unmissable and state the pass/fail rather than leaving raw counts to
+         * be interpreted. */
+        if (write_errors == 0 && verify_errors == 0 && verify_mismatches == 0) {
+            LOG_ERR("I2C BUS OK: 0 write errors, %u/%u read-backs matched",
+                    (unsigned)VERIFY_ITERATIONS * 2, (unsigned)VERIFY_ITERATIONS * 2);
+        } else {
+            LOG_ERR("I2C BUS SUSPECT: %u write errors, %u read errors, %u mismatches "
+                    "-- bus is marginal, do NOT trust the timing above",
+                    write_errors, verify_errors, verify_mismatches);
+        }
     } else {
         LOG_ERR("I2C TIMING: measurement failed - see earlier error");
     }
@@ -126,8 +154,8 @@ static int i2c_scan_timing_probe(void) {
     const int64_t start = k_uptime_get();
 
     for (int i = 0; i < PROBE_ITERATIONS; i++) {
-        gpio_pin_set(mcp, PROBE_PIN, 1);
-        gpio_pin_set(mcp, PROBE_PIN, 0);
+        write_errors += (gpio_pin_set(mcp, PROBE_PIN, 1) != 0);
+        write_errors += (gpio_pin_set(mcp, PROBE_PIN, 0) != 0);
     }
 
     const int64_t elapsed_ms = k_uptime_get() - start;
@@ -139,6 +167,26 @@ static int i2c_scan_timing_probe(void) {
 
     measured_us_per_write = (uint32_t)((elapsed_ms * 1000) / PROBE_WRITES);
     measured_elapsed_ms = (int)elapsed_ms;
+
+    /* Integrity pass, deliberately outside the timed loop so the read-backs do
+     * not pollute the per-write figure. */
+    for (int i = 0; i < VERIFY_ITERATIONS; i++) {
+        for (int level = 1; level >= 0; level--) {
+            int werr = gpio_pin_set(mcp, PROBE_PIN, level);
+            if (werr) {
+                write_errors++;
+                continue;
+            }
+
+            int readback = gpio_pin_get(mcp, PROBE_PIN);
+            if (readback < 0) {
+                verify_errors++;
+            } else if (readback != level) {
+                verify_mismatches++;
+            }
+        }
+    }
+
     measurement_valid = true;
 
     return 0;

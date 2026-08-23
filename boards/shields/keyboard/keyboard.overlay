@@ -94,7 +94,18 @@ nice_view_spi: &spi1 {
 
 &i2c0 {
     status = "okay";
-    clock-frequency = <100000>;   /* standard mode, 100 kHz (PRD §2.3) */
+    /* Fast mode. This board has NO external I2C pull-ups -- the BOM contains
+     * zero resistors and PRD §2.3 states it outright -- so SDA/SCL rise on the
+     * nRF's internal ~13k pull-ups, giving roughly 470 ns against the 300 ns
+     * that fast mode specifies. Out of spec, but workable over this short
+     * trace; debug/i2c_scan_timing.c's "I2C BUS OK" line is what confirms it
+     * rather than assuming. Fallback is <250000>, comfortably in spec.
+     *
+     * The win here is ~2.2x, not the 4x the clock ratio suggests: measurement
+     * at 100 kHz gave 515 us per port write, of which only 380 us is bus time.
+     * The remaining ~135 us is fixed TWIM setup / semaphore / context-switch
+     * overhead per transaction and does not scale with clock. */
+    clock-frequency = <400000>;
 
     mcp23017: mcp23017@20 {
         compatible = "microchip,mcp230xx";
