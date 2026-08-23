@@ -94,18 +94,26 @@ nice_view_spi: &spi1 {
 
 &i2c0 {
     status = "okay";
-    /* Fast mode. This board has NO external I2C pull-ups -- the BOM contains
-     * zero resistors and PRD §2.3 states it outright -- so SDA/SCL rise on the
-     * nRF's internal ~13k pull-ups, giving roughly 470 ns against the 300 ns
-     * that fast mode specifies. Out of spec, but workable over this short
-     * trace; debug/i2c_scan_timing.c's "I2C BUS OK" line is what confirms it
-     * rather than assuming. Fallback is <250000>, comfortably in spec.
+    /* Held at 100 kHz for now. A devicetree bump to <400000> was tried and the
+     * expander stopped working (debug/i2c_scan_timing.c could not measure at
+     * all), so booting at that speed risks taking the whole matrix down with
+     * it — every column hangs off this one device. The shim now sweeps 100 kHz
+     * and 400 kHz at RUNTIME instead and restores 100 kHz afterwards, so the
+     * viability of fast mode gets settled without ever shipping a board that
+     * cannot type.
      *
-     * The win here is ~2.2x, not the 4x the clock ratio suggests: measurement
-     * at 100 kHz gave 515 us per port write, of which only 380 us is bus time.
-     * The remaining ~135 us is fixed TWIM setup / semaphore / context-switch
+     * Context for whatever the sweep concludes: this board has NO external I2C
+     * pull-ups — the BOM contains zero resistors and PRD §2.3 states it
+     * outright — so SDA/SCL rise on the nRF's internal ~13k pull-ups, roughly
+     * 470 ns against the 300 ns fast mode specifies. Fast mode is therefore out
+     * of spec here, and 250 kHz (in spec, reachable only from this property)
+     * is the fallback.
+     *
+     * Note the ceiling is lower than the clock ratio suggests: measurement gave
+     * 515 us per port write at 100 kHz, of which only 380 us is bus time. The
+     * remaining ~135 us is fixed TWIM setup / semaphore / context-switch
      * overhead per transaction and does not scale with clock. */
-    clock-frequency = <400000>;
+    clock-frequency = <100000>;
 
     mcp23017: mcp23017@20 {
         compatible = "microchip,mcp230xx";
