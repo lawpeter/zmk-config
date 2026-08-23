@@ -147,6 +147,53 @@ nice_view_spi: &spi1 {
         diode-direction = "col2row";
         wakeup-source;
 
+        /* ── Scan timing ──────────────────────────────────────────────────────
+         * These were previously unset, inheriting the binding defaults, which
+         * is what caused rapid double-taps to merge into single keystrokes.
+         *
+         * The driver does NOT measure elapsed time. It feeds the debouncer the
+         * configured debounce-scan-period-ms as its elapsed_ms
+         * (kscan_gpio_matrix.c:247), so thresholds are really counted in whole
+         * scans:
+         *
+         *     scans_to_latch  = ceil(threshold / scan-period) + 1   (0 -> 1)
+         *     real_debounce   = scans_to_latch x actual_scan_duration
+         *
+         * A full 14-column scan is 28 I2C transactions and measures 5.49 ms at
+         * 400 kHz. Defaults (scan-period 1, threshold 4) meant 5 scans, i.e.
+         * ~72 ms of real debounce in each direction at the old 100 kHz scan
+         * rate -- longer than the gap between two fast taps, so the release was
+         * never observed and the pair collapsed into one keystroke. These
+         * values give 2 scans, about 11 ms, a 6.5x reduction.                */
+
+        /* At or above the measured 5.49 ms scan. This is load-bearing beyond
+         * debounce scaling: read_continue() advances a scan_time counter by
+         * this amount and reschedules with K_TIMEOUT_ABS_MS, so setting it
+         * below the true scan duration makes the deadline fall permanently
+         * into the past, the work item re-fire immediately, and the board scan
+         * back-to-back at 100% bus duty forever. That is what it was doing. */
+        debounce-scan-period-ms = <6>;
+
+        /* ceil(1/6)+1 = 2 scans ~= 11 ms. Any threshold from 1 to 6 collapses
+         * to the same 2 scans at this scan period; 1 states the intent most
+         * plainly. Two scans means the level must hold across two samples
+         * 6 ms apart, comfortably longer than MX bounce (1-5 ms), while
+         * staying far below the ~40-90 ms gap of a fast double-tap.          */
+        debounce-press-ms   = <1>;
+        debounce-release-ms = <1>;
+
+        /* Gap after the last key releases before scanning resumes. Must also
+         * stay at or above the scan duration or the drift above returns, so
+         * the usable range here is ~6 (91% duty) to ~15 (37% duty).
+         *
+         * Less dangerous than it looks, which is what frees it up as the
+         * battery knob: a tap is only lost if the whole press AND release fit
+         * inside this window, and human contact time is ~30-60 ms. The
+         * constraint that was actually being violated was the debounce window
+         * versus the inter-tap gap, handled above. 10 ms gives ~55% bus duty,
+         * already better than the ~100% the board was running at.            */
+        poll-period-ms = <10>;
+
         /* Outputs (strobe), on the MCP23017. GPA0..7 = 0..7, GPB0..7 = 8..15. */
         col-gpios
             = <&mcp23017 15 GPIO_ACTIVE_HIGH>   /* COL1  GPB7 */
