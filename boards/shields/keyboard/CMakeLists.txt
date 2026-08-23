@@ -63,10 +63,3 @@ zephyr_library_sources(behaviors/behavior_shift_mask.c)
 # WITHOUT mod-morph's own built-in masking, which conflicts with &shift_mask
 # used inside the invoked macros — see behavior_shift_branch.c for why.
 zephyr_library_sources(behaviors/behavior_shift_branch.c)
-
-# ============================ TEMPORARY — DELETE ME ============================
-# Step 0 instrumentation: measures real MCP23017 I2C write cost so the matrix
-# scan duration can be derived. Remove this line and debug/i2c_scan_timing.c
-# once the measurement is recorded.
-zephyr_library_sources(debug/i2c_scan_timing.c)
-# ==============================================================================
