@@ -54,16 +54,17 @@
  * combo_sys_reset still targets key position 54 (now the Caps Word key) — combos
  * bind by physical position, not by what's currently bound there.
  *
- * Mac/PC modifier profile: boot default is now MAC (default_layer's Row4 sends
- * Cmd/Mission Control directly — see that layer's comment). device_layer `0` →
- * &tog 5, a plain flip toggle — pressing it the first time switches to PC
- * (pc_mods, layer 5, overrides Row4 back to Ctrl/Windows-key), pressing it again
- * flips back to Mac. Safe as a plain flip because it's the ONLY binding involved
- * (no Unicode mode to keep in sync) and only exists on the momentary device
- * layer, so it can never fire during normal typing (pc_mods itself is &trans at
- * that position, so `0` always types a zero outside of holding ⊃+f). Right `<>`
- * (COL11) deliberately stays Control in both modes — see pc_mods layer comment
- * below. */
+ * Mac/PC modifier profile (PRD v2 §2): boot default is now PC/WINDOWS.
+ * default_layer's Row4 is still Mac-correct (sends Cmd/Mission Control
+ * directly); PC is reached by pc_mods (layer 5) sitting on top, and
+ * behavior_os_mode.c activates that layer at boot unless flash holds a stored
+ * "Mac" choice. device_layer `0` → &os_mode_toggle: a two-state flip (PC <->
+ * Mac) that ALSO writes the new state to settings/NVS so it survives a reboot
+ * or firmware reset. Safe as a flip because it's the only binding involved and
+ * only exists on the momentary device layer — it can never fire during normal
+ * typing (pc_mods is &trans at that position, so `0` always types a zero
+ * outside of holding ⊃+f). Right `<>` (COL11) deliberately stays Control in
+ * both modes — see pc_mods layer comment below. */
 
 / {
     behaviors {
@@ -109,6 +110,16 @@
         typing_test_toggle: typing_test_toggle {
             compatible = "zmk,behavior-typing-test";
             #binding-cells = <0>;
+        };
+
+        /* Mac/PC OS-mode toggle (device_layer, `0`) — PRD v2 §2.
+         * Flips pc_mods (layer 5) like the old &tog 5, but also persists the
+         * choice to settings/NVS and restores it on boot. Boot default (no
+         * stored value) is PC/Windows. See behavior_os_mode.c. */
+        os_mode_toggle: os_mode_toggle {
+            compatible = "zmk,behavior-os-mode";
+            #binding-cells = <0>;
+            layer = <5>;
         };
 
         /* Esc key: tap → ESC, shift+tap → GRAVE. Tap side of esc_ht below. */
@@ -870,10 +881,12 @@
  * <>/LGUI  ⊞/LC(UP)*   LALT   ⌘/LGUI**    Space1(2u)  ✦/RALT  [gap]            *
  *                  COL8        COL9   COL10  COL11(MX65)  COL12  COL13  COL14   *
  *                  Space2(2u)  ⊃/mo1  f/mo2  <>/LCTRL***   Left   Down   Right  *
- * REVISION: base is now Mac-correct (boot default = Mac mode). pc_mods (layer  *
- * 5, toggled via device_layer's `0`) overrides these back to PC when active.   *
- * * COL2 (⊞): Mission Control (Ctrl+Up) by default now, not the Windows key.   *
- * ** MX59 (⌘): sends Cmd directly at boot — pc_mods overrides to Ctrl.         *
+ * This row is Mac-correct. pc_mods (layer 5, toggled via device_layer's `0`)  *
+ * overrides these to PC when active — and per PRD v2 §2 it is active at boot   *
+ * by default (behavior_os_mode.c), so the shipping default is PC/Windows even  *
+ * though this row itself is unchanged.                                         *
+ * * COL2 (⊞): Mission Control (Ctrl+Up) here, not the Windows key.             *
+ * ** MX59 (⌘): sends Cmd directly — pc_mods overrides to Ctrl.                 *
  * *** MX65 (right <>): stays LCTRL in BOTH modes (pc_mods leaves it &trans) —  *
  *     macOS needs a real Control key even in Mac mode, see pc_mods comment.    */
 &kp LGUI &kp LC(UP) &kp LALT &kp LGUI &kp SPACE &kp RALT &kp SPACE &mo 1 &mo 2 &kp LCTRL &kp LEFT &kp DOWN &kp RIGHT
@@ -949,11 +962,11 @@
              *   6   → BT clear current profile
              *   7   → BT_NXT  (cycle forward)
              *   8   → BT_PRV  (cycle backward)
-             *   0   → &tog 5  — flip Mac/PC modifier profile (pc_mods). Boot
-             *         default is Mac (base layer), so pressing this the first
-             *         time switches to PC, pressing again switches back. Plain
-             *         flip is safe here: it's the only binding involved (no
-             *         Unicode mode to keep in sync) and only reachable while
+             *   0   → &os_mode_toggle — flip Mac/PC modifier profile (pc_mods)
+             *         AND persist it to settings/NVS (PRD v2 §2). Boot default
+             *         is PC/Windows (behavior_os_mode.c activates layer 5 at
+             *         init); after a toggle the choice is restored on the next
+             *         boot. Two states only. Safe here: only reachable while
              *         holding ⊃+f, so it can never fire during normal typing.
              * Backslash → OUT_TOG  (toggle USB / BLE output)
              * All other keys transparent.
@@ -965,7 +978,7 @@
              * accepted for this layer's &trans key positions. */
             bindings = <
 /* Row 0 — BT management + Mac/PC mode switch */
-&trans  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR  &bt BT_NXT  &bt BT_PRV  &trans  &tog 5  &trans  &trans  &trans
+&trans  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4  &bt BT_CLR  &bt BT_NXT  &bt BT_PRV  &trans  &os_mode_toggle  &trans  &trans  &trans
 /* Row 1 — backslash → OUT_TOG */
 &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &trans  &out OUT_TOG
 /* Row 2 — home row */
@@ -1013,7 +1026,8 @@
 
         pc_mods {
             display-name = "PC MODE";
-            /* Toggled by &tog 5 from device_layer's `0` key. &trans everywhere
+            /* Toggled by &os_mode_toggle from device_layer's `0` key, and
+             * active at boot by default (PRD v2 §2a). &trans everywhere
              * except the 4 modifier positions below — never bind anything else
              * on this layer (including row5/encoder push — see pc_lock_layer
              * below for why that's a separate conditional layer instead), it
@@ -1023,8 +1037,8 @@
              * Right `<>` (COL11) deliberately stays &trans (→ base LCTRL, i.e.
              * real Control) in both modes: macOS genuinely needs a Control key
              * (Ctrl+C/SIGINT, Ctrl+Tab, Spaces switching, emacs bindings) even
-             * while Mac mode (the boot default) sends Cmd from left `<>`/`⌘` —
-             * do not "fix" that asymmetry for consistency, it's the point. In
+             * while Mac mode sends Cmd from left `<>`/`⌘` — do not "fix" that
+             * asymmetry for consistency, it's the point. In
              * PC mode all three of `<>`/`<>`/`⌘` send Ctrl, matching a normal
              * PC keyboard. */
             bindings = <

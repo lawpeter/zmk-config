@@ -1,0 +1,29 @@
+# Copyright (c) 2026 keyboard project
+# SPDX-License-Identifier: MIT
+#
+# PRD v2 §2 — OS-mode (Mac/PC modifier profile) toggle with persistence.
+#
+# Replaces `&tog 5` on the device layer. A press flips the PC-modifier layer
+# (`pc_mods`, layer `layer`) on/off relative to its *current* state — exactly
+# two states, same as the old plain toggle — and writes the new state to the
+# Zephyr settings subsystem so it survives a reboot / firmware reset.
+#
+# Boot default (no stored value, e.g. first flash) is PC/Windows: the layer is
+# activated at init. See behavior_os_mode.c for the ordering guarantees.
+
+description: >
+  Mac/PC OS-mode toggle. Flips the pc_mods layer and persists the choice to
+  settings so it is restored on the next boot. Defaults to PC (Windows).
+
+compatible: "zmk,behavior-os-mode"
+
+include: zero_param.yaml
+
+properties:
+  layer:
+    type: int
+    required: true
+    description: >
+      Layer id of the PC-modifier override layer (pc_mods). Kept as a property
+      so the C module and the keymap can never disagree about which layer is
+      "PC mode".

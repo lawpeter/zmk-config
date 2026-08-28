@@ -52,6 +52,11 @@ zephyr_library_sources(behaviors/behavior_disp_cycle.c)
 # but is a no-op while tt.active == false (i.e. at boot and when no test runs).
 zephyr_library_sources(behaviors/behavior_typing_test.c)
 
+# os_mode toggle behavior — guarded internally by DT_HAS_COMPAT_STATUS_OKAY.
+# PRD v2 §2: Mac/PC modifier profile with a Windows boot default and
+# persistence to the settings/NVS backend across reboot.
+zephyr_library_sources(behaviors/behavior_os_mode.c)
+
 # shift_mask behavior — guarded internally by DT_HAS_COMPAT_STATUS_OKAY.
 # Wraps zmk_hid_masked_modifiers_set/clear for use inside macros (uppercase
 # Greek sym_layer triggers need Shift suppressed for their own duration,

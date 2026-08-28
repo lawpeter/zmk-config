@@ -39,7 +39,7 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 | 2 | `fn_layer` | hold `f` (momentary) |
 | 3 | `device_layer` | hold `⊃` **and** `f` together (conditional layer — neither key alone triggers it) |
 | 4 | `esc_layer` | hold `Esc` |
-| 5 | `pc_mods` | toggled on/off from the device layer (`0`) — see [Mac / PC mode switch](#mac--pc-mode-switch) |
+| 5 | `pc_mods` | toggled on/off from the device layer (`0`); **active by default at boot**, persisted to flash — see [Mac / PC mode switch](#mac--pc-mode-switch) |
 | 6 | `pc_lock_layer` | conditional — active only while `esc_layer`(4) **and** `pc_mods`(5) are both active (holding `Esc` while already in PC mode); overrides just the lock shortcut, see [Esc-hold layer](#esc-hold-brightnesslock-layer) |
 | 7-9 | `extra1`–`extra3` | reserved, empty — for ad-hoc ZMK Studio customization only |
 
@@ -65,9 +65,9 @@ Standard QWERTY, with these keyboard-specific points:
 - **Modifier row** (left to right): `<>` (Cmd) · `⊞` (Mission Control) · Alt ·
   `⌘` (Cmd, Mac default) · Space · `✦` (Right Alt, unassigned/reserved — see
   [Known limitations](#known-limitations)) · Space · `⊃` · `f` · `<>` (Ctrl) · arrows.
-  In Mac mode (boot default) left `<>` and `⌘` send Cmd, `⊞` triggers Mission
-  Control, right `<>` stays Ctrl. In PC mode this changes — see
-  [Mac / PC mode switch](#mac--pc-mode-switch).
+  In Mac mode left `<>` and `⌘` send Cmd, `⊞` triggers Mission Control, right
+  `<>` stays Ctrl. PC mode (the boot default) sends Ctrl / Windows key instead —
+  see [Mac / PC mode switch](#mac--pc-mode-switch).
 
 ---
 
@@ -269,8 +269,8 @@ every regular key is inert on this layer.
 |---|---|
 | Rotate CW | Brightness up |
 | Rotate CCW | Brightness down |
-| Push | **Lock the screen** — `Ctrl+Cmd+Q` in Mac mode (boot default), `Win+L` in
-PC mode (see [Mac / PC mode switch](#mac--pc-mode-switch); this is the one place the
+| Push | **Lock the screen** — `Win+L` in PC mode (boot default), `Ctrl+Cmd+Q` in
+Mac mode (see [Mac / PC mode switch](#mac--pc-mode-switch); this is the one place the
 Mac/PC setting affects something outside the modifier row itself) |
 
 Both are each OS's own default shortcut, not something this firmware invents — if
@@ -287,9 +287,9 @@ Windows for external keyboards; this is a host-OS limitation, not a firmware bug
 The board has two "modes" for how the modifier keys behave, switched from the
 [device layer](#device-layer--f):
 
-- **`0`** toggles between Mac mode (**boot default**) and PC mode.
+- **`0`** toggles between PC mode (**boot default**) and Mac mode.
 
-This is a plain flip toggle (not two separate keys) — safe here because it's the
+This is a two-state flip toggle (not two separate keys) — safe here because it's the
 *only* thing tied to it (an earlier revision also kept a Unicode input mode in sync
 with this switch and needed two explicit "set" keys to avoid desyncing the two; that
 requirement went away once [symbols moved to Espanso](#espanso-setup-required-for-symbols),
@@ -297,9 +297,17 @@ which needs no OS-mode awareness at all). It only exists on the momentary device
 layer, so it can never fire during normal typing — `0` always types a plain zero
 unless you're holding `⊃`+`f`.
 
+**The choice is saved to flash.** Toggling to Mac and power-cycling brings the
+board back up in Mac mode; the setting survives a firmware reflash too. Only a
+fresh flash with no prior settings (or a settings erase) starts in the
+Windows/PC default. Internally the mode is the `pc_mods` layer (index 5) being
+active — a small custom behaviour (`&os_mode_toggle`) writes that state to the
+same settings/NVS store ZMK uses for BT profiles and restores it at boot,
+before the first keypress is processed.
+
 **What changes between modes:**
 
-| Key | Mac mode (boot default) | PC mode |
+| Key | Mac mode | PC mode (boot default) |
 |---|---|---|
 | Left `<>` (modifier row, leftmost) | **Cmd** | Ctrl |
 | `⊞` (Windows key) | **Mission Control** (`Ctrl+Up`) | Windows key |
@@ -383,6 +391,30 @@ activation during normal typing is essentially impossible):
 `1`–`5` select a profile, `6` clears the current one, `7`/`8` cycle next/previous.
 `\` toggles between USB and BLE output entirely.
 
+### Profile assignments
+
+| Key | Index | Device | Status |
+|---|---|---|---|
+| `1` | 0 | MacBook | Working |
+| `2` | 1 | — | Unassigned |
+| `3` | 2 | Windows PC | Working |
+| `4` | 3 | — | Unassigned |
+| `5` | 4 | — | Unassigned |
+
+Notes:
+
+- **Key label vs. index.** The keys are labeled `1`–`5` but select profile
+  indices `0`–`4`. Anything reading raw ZMK settings (or ZMK Studio) reports the
+  0-indexed number, so `1` = profile 0, `3` = profile 2, and so on.
+- **Profile ≠ output channel.** Selecting a profile does *not* switch output to
+  BLE — `\` (`OUT_TOG`) does that independently. A host can show "connected"
+  while receiving no keystrokes because output is still set to USB. (This cost a
+  real debugging session on the Mac.)
+- **One device per profile.** Trying to pair a second host into an occupied
+  profile fails rather than replacing the bond. Clear the profile with `6`
+  first, then pair.
+- **Linux/BlueZ does not work.** See [Known limitations](#known-limitations).
+
 ---
 
 ## Typing test
@@ -411,8 +443,11 @@ Studio changes to those layers won't persist across a reflash.
 
 ## Power
 
-- Deep sleep after 15 minutes of inactivity (~15 µA idle current). Any key or the
-  encoder wakes it.
+- Deep sleep after 15 minutes of inactivity (~15 µA idle current). **Press the
+  encoder button to wake it** — that pin (P0.20) is a native nRF GPIO and is
+  interrupt-capable. Matrix keys cannot wake it: the columns run through the
+  MCP23017 I²C expander, which forces polled scanning, and polling only runs
+  while the CPU is awake. Rotating the encoder does not wake it either; press only.
 - BLE connection interval is tuned for a balance of typing latency and radio power
   draw — no user-facing setting.
 
@@ -454,14 +489,16 @@ local Zephyr toolchain is required or expected for normal use of this repo.
   games, some terminal emulators, apps that grab exclusive keyboard input) don't
   respect system-wide text expansion — symbol triggers may not expand there even
   with Espanso running correctly everywhere else.
-- **Mac/PC mode resets to Mac (default) on every reboot** — it isn't saved to flash.
-  If you reboot while in PC mode, press `0` (holding `⊃`+`f`) again once the board
-  comes back up.
 - **The `✦` key (Right Alt, between the two spacebars) has no assigned function**
   beyond sending plain Right Alt — a "gaming profile" or other use for it is
   undecided and deliberately unassigned for now.
 - **Symbol-layer rollout is currently partial** — see the status note in
   [Symbol layer](#symbol-layer-⊃).
+- **Linux/BlueZ pairing fails.** Ubuntu pairing fails with
+  `org.bluez.Error.AuthenticationFailed` on every profile. This matches a
+  documented ZMK/BlueZ interaction, not a board fault — the same board pairs
+  fine on macOS and Windows. Linux use is wired-only by decision; don't
+  re-debug this.
 
 ---
 
