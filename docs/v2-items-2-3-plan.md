@@ -1,7 +1,8 @@
 # Keyrambit v2 — implementation plan for items 2 and 3
 
-Companion to `ZMK_Firmware_PRD.md` (v2). Items 1, 4, 5 and **2** are done;
-item 3 is still planned only (see below).
+Companion to `ZMK_Firmware_PRD.md` (v2). Items 1, 2, 4, 5 and **3** are all
+implemented. Item 3 still needs the on-hardware two-round drop test and a
+legibility check of the 3-line stacked layout (see §3 acceptance criteria).
 
 **Item 2 — implemented** (Option A). New files:
 `dts/bindings/zmk,behavior-os-mode.yaml`,

@@ -18,7 +18,7 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 - [Mac / PC mode switch](#mac--pc-mode-switch)
 - [Caps Word vs. Caps Lock](#caps-word-vs-caps-lock)
 - [Rotary encoder — full behavior table](#rotary-encoder--full-behavior-table)
-- [Display — 4 modes](#display--4-modes)
+- [Display — 5 modes](#display--5-modes)
 - [Safety combos (bootloader / reset)](#safety-combos-bootloader--reset)
 - [Bluetooth](#bluetooth)
 - [Typing test](#typing-test)
@@ -45,8 +45,9 @@ history and `ZMK_Firmware_PRD.md` for the "why").
 
 Layers 1, 2, and 4 are momentary (active only while held). Layer 3 requires both
 `⊃` and `f` held simultaneously. Layer 5 is a persistent on/off state that survives
-independently of what else you're holding, until explicitly switched or the board
-reboots (it does **not** persist across reboot — see [Known limitations](#known-limitations)).
+independently of what else you're holding, until explicitly switched. It is saved
+to flash and restored on boot, defaulting to on (PC mode) — see
+[Mac / PC mode switch](#mac--pc-mode-switch).
 
 ---
 
@@ -346,7 +347,7 @@ The encoder's rotation and push behavior depends on which layer (if any) is held
 
 | Context | Rotate CW | Rotate CCW | Push |
 |---|---|---|---|
-| Default (nothing held) | Volume up | Volume down | Cycle [display mode](#display--4-modes) (long-press resets to mode 1) |
+| Default (nothing held) | Volume up | Volume down | Cycle [display mode](#display--5-modes) (long-press resets to mode 1) |
 | `⊃` held | Next track | Previous track | Play/Pause |
 | `f` held | Scroll up (4x speed) | Scroll down (4x speed) | Middle-click |
 | `⊃` + `f` held (device layer) | *(falls through to `f`'s scroll — see [device layer](#device-layer--f))* | | No-op |
@@ -354,7 +355,7 @@ The encoder's rotation and push behavior depends on which layer (if any) is held
 
 ---
 
-## Display — 4 modes
+## Display — 5 modes
 
 Press the encoder (on the base layer, nothing else held) to cycle through display
 modes; long-press to jump back to mode 1.
@@ -365,6 +366,15 @@ modes; long-press to jump back to mode 1.
    to mode 1's CPM graph)
 3. **Battery** — large battery percentage + charge bar
 4. **Typing Test** — results screen for the [typing test](#typing-test)
+5. **Keypress** — live readout of the key(s) currently being pressed, by
+   human-readable label (`A`, `LSHIFT`, `F11`, `S-A` for shifted combos, `VOL+`
+   for media keys). Up to three keys stack vertically, with a `+` if more are
+   held. On release it holds the last key and shows how long it was held
+   (`847 ms`, `1.25 s`, clamped to `99+ s`). Reflects post-layer output, so it
+   verifies what a layer key actually sends — handy for checking symbol-layer
+   Espanso triggers or tuning hold-tap thresholds without a text editor open.
+   Reads `zmk_keycode_state_changed` on the dispatch thread and redraws on the
+   display thread — never touches the key-scan loop.
 
 Volume, Uptime, and Animation modes were removed — they were static-text
 placeholders with no real data behind them (ZMK has no volume state to read, and
@@ -420,7 +430,7 @@ Notes:
 ## Typing test
 
 Press `f` + `T` to start a typing test; press it again to stop and see results.
-Switch the display to mode 4 (see [Display](#display--4-modes)) to watch it live or
+Switch the display to mode 4 (see [Display](#display--5-modes)) to watch it live or
 review the result. Screen reads, top to bottom: `READY`/`TYPING`/`DONE` (phase),
 then once done, one stat per line — `WPM`, `CPM`, `TIME`, `KEYS`.
 

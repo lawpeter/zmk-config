@@ -12,6 +12,7 @@
  *   1  WPM        — live WPM counter (zmk_widget_wpm)
  *   2  Battery    — battery percentage + bar
  *   3  TypingTest — typing-test widget (zmk_widget_typing_test)
+ *   4  Keypress   — live post-layer key readout (zmk_widget_keypress, PRD v2 §3)
  *
  * REVISION: originally 7 modes (PRD §6.1) — Volume, Uptime, and Animation
  * were static-text placeholders with no real data behind them (ZMK has no
@@ -38,6 +39,7 @@
 #include "widgets/status.h"   /* also pulls in util.h (CANVAS_SIZE, rotate_canvas, etc.) */
 #include "widgets/wpm.h"
 #include "widgets/typing_test.h"
+#include "widgets/keypress.h"
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -49,6 +51,7 @@ static uint8_t   active_mode;
 static struct zmk_widget_status status_widget;
 static struct zmk_widget_wpm    wpm_widget;
 static struct zmk_widget_typing_test tt_widget;
+static struct zmk_widget_keypress   keypress_widget;
 
 /* Battery screen state */
 static lv_obj_t  *battery_canvas;
@@ -179,6 +182,10 @@ lv_obj_t *zmk_display_status_screen(void) {
      * Volume/Uptime/Animation placeholders) */
     screens[3] = lv_obj_create(NULL);
     zmk_widget_typing_test_init(&tt_widget, screens[3]);
+
+    /* Mode 4: live keypress readout (PRD v2 §3) */
+    screens[4] = lv_obj_create(NULL);
+    zmk_widget_keypress_init(&keypress_widget, screens[4]);
 
     display_mode_listener_init();
     battery_mode_listener_init();

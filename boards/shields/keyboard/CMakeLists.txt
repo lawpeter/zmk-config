@@ -38,9 +38,13 @@ if(CONFIG_ZMK_DISPLAY)
         # Step 8: live WPM counter widget (mode 1)
         widgets/wpm.c
 
-        # Step 9: typing-test widget (mode 4) + state-change event
+        # Step 9: typing-test widget (mode 3) + state-change event
         widgets/typing_test_state_changed.c
         widgets/typing_test.c
+
+        # PRD v2 §3: live keypress readout widget (mode 4)
+        widgets/keypress.c
+        widgets/keycode_labels.c
     )
 endif()
 
